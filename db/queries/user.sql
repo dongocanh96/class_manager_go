@@ -33,16 +33,12 @@ OFFSET $2;
 
 -- name: UpdateUser :one
 UPDATE users
-SET (
-    username,
-    hashed_password,
-    fullname,
-    email,
-    phone_number,
-    password_changed_at
-) VALUES (
-    $2, $3, $4, $5, $6, $7
-)
+SET username = $2,
+    hashed_password = $3,
+    fullname = $4,
+    email = $5,
+    phone_number = $6,
+    password_changed_at = $7
 WHERE id = $1
 RETURNING *;
 

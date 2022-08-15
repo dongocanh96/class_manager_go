@@ -32,20 +32,16 @@ OFFSET $3;
 SELECT * FROM solutions
 WHERE 
     user_id = $1 OR
-    problem_id = $1
+    problem_id = $2
 ORDER BY id
-LIMIT $2
-OFFSET $3;
+LIMIT $3
+OFFSET $4;
 
 -- name: UpdateSolution :one
 UPDATE solutions
-SET (
-    file_name,
-    saved_path,
-    updated_at,
-) VALUES (
-    $2, $3, $4
-)
+SET file_name = $2,
+    saved_path = $3,
+    updated_at = $4
 WHERE user_id = $1
 RETURNING *;
 
