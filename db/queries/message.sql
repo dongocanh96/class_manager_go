@@ -37,17 +37,13 @@ OFFSET $3;
 
 -- name: UpdateMessage :one
 UPDATE messages
-SET (
-    title,
-    content,
-    is_read,
-    read_at
-) VALUES (
-    $2, $3, $4, $5
-)
+SET title = $2,
+    content = $3,
+    is_read = $4,
+    read_at = $5
 WHERE id = $1
 RETURNING *;
 
 -- name: DeleteMessage :exec
-DELETE FROM transfers
+DELETE FROM messages
 WHERE id = $1;

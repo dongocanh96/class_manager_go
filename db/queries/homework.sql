@@ -28,16 +28,12 @@ OFFSET $2;
 
 -- name: UpdateHomework :one
 UPDATE homeworks
-SET (
-    title,
-    file_name,
-    saved_path,
-    is_closed,
-    updated_at,
-    closed_at
-) VALUES (
-    $2, $3, $4, $5, $6, $7
-)
+SET title = $2,
+    file_name = $3,
+    saved_path = $4,
+    is_closed = $5,
+    updated_at = $6,
+    closed_at = $7
 WHERE id = $1
 RETURNING *;
 
