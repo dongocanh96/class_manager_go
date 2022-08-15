@@ -1,0 +1,4 @@
+DROP TABLE IF EXISTS "messages";
+DROP TABLE IF EXISTS "solutions";
+DROP TABlE IF EXISTS "homeworks";
+DROP TABlE IF EXISTS "users";
