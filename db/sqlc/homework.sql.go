@@ -10,6 +10,38 @@ import (
 	"time"
 )
 
+const closeHomework = `-- name: CloseHomework :one
+UPDATE homeworks
+SET is_closed = $2,
+    closed_at = $3
+WHERE id = $1
+RETURNING id, teacher_id, subject, title, file_name, saved_path, is_closed, created_at, updated_at, closed_at
+`
+
+type CloseHomeworkParams struct {
+	ID       int64     `json:"id"`
+	IsClosed bool      `json:"is_closed"`
+	ClosedAt time.Time `json:"closed_at"`
+}
+
+func (q *Queries) CloseHomework(ctx context.Context, arg CloseHomeworkParams) (Homework, error) {
+	row := q.db.QueryRowContext(ctx, closeHomework, arg.ID, arg.IsClosed, arg.ClosedAt)
+	var i Homework
+	err := row.Scan(
+		&i.ID,
+		&i.TeacherID,
+		&i.Subject,
+		&i.Title,
+		&i.FileName,
+		&i.SavedPath,
+		&i.IsClosed,
+		&i.CreatedAt,
+		&i.UpdatedAt,
+		&i.ClosedAt,
+	)
+	return i, err
+}
+
 const createHomework = `-- name: CreateHomework :one
 INSERT INTO homeworks (
     teacher_id,
@@ -186,9 +218,7 @@ UPDATE homeworks
 SET title = $2,
     file_name = $3,
     saved_path = $4,
-    is_closed = $5,
-    updated_at = $6,
-    closed_at = $7
+    updated_at = $5
 WHERE id = $1
 RETURNING id, teacher_id, subject, title, file_name, saved_path, is_closed, created_at, updated_at, closed_at
 `
@@ -198,9 +228,7 @@ type UpdateHomeworkParams struct {
 	Title     string    `json:"title"`
 	FileName  string    `json:"file_name"`
 	SavedPath string    `json:"saved_path"`
-	IsClosed  bool      `json:"is_closed"`
 	UpdatedAt time.Time `json:"updated_at"`
-	ClosedAt  time.Time `json:"closed_at"`
 }
 
 func (q *Queries) UpdateHomework(ctx context.Context, arg UpdateHomeworkParams) (Homework, error) {
@@ -209,9 +237,7 @@ func (q *Queries) UpdateHomework(ctx context.Context, arg UpdateHomeworkParams) 
 		arg.Title,
 		arg.FileName,
 		arg.SavedPath,
-		arg.IsClosed,
 		arg.UpdatedAt,
-		arg.ClosedAt,
 	)
 	var i Homework
 	err := row.Scan(

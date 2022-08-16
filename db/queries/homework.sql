@@ -31,9 +31,14 @@ UPDATE homeworks
 SET title = $2,
     file_name = $3,
     saved_path = $4,
-    is_closed = $5,
-    updated_at = $6,
-    closed_at = $7
+    updated_at = $5
+WHERE id = $1
+RETURNING *;
+
+-- name: CloseHomework :one
+UPDATE homeworks
+SET is_closed = $2,
+    closed_at = $3
 WHERE id = $1
 RETURNING *;
 

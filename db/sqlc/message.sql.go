@@ -229,29 +229,49 @@ func (q *Queries) ListMessagesToUser(ctx context.Context, arg ListMessagesToUser
 const updateMessage = `-- name: UpdateMessage :one
 UPDATE messages
 SET title = $2,
-    content = $3,
-    is_read = $4,
-    read_at = $5
+    content = $3
 WHERE id = $1
 RETURNING id, from_user_id, to_user_id, title, content, is_read, created_at, read_at
 `
 
 type UpdateMessageParams struct {
-	ID      int64     `json:"id"`
-	Title   string    `json:"title"`
-	Content string    `json:"content"`
-	IsRead  bool      `json:"is_read"`
-	ReadAt  time.Time `json:"read_at"`
+	ID      int64  `json:"id"`
+	Title   string `json:"title"`
+	Content string `json:"content"`
 }
 
 func (q *Queries) UpdateMessage(ctx context.Context, arg UpdateMessageParams) (Message, error) {
-	row := q.db.QueryRowContext(ctx, updateMessage,
-		arg.ID,
-		arg.Title,
-		arg.Content,
-		arg.IsRead,
-		arg.ReadAt,
+	row := q.db.QueryRowContext(ctx, updateMessage, arg.ID, arg.Title, arg.Content)
+	var i Message
+	err := row.Scan(
+		&i.ID,
+		&i.FromUserID,
+		&i.ToUserID,
+		&i.Title,
+		&i.Content,
+		&i.IsRead,
+		&i.CreatedAt,
+		&i.ReadAt,
 	)
+	return i, err
+}
+
+const updateMessageState = `-- name: UpdateMessageState :one
+UPDATE messages
+SET is_read = $2,
+    read_at = $3
+WHERE id = $1
+RETURNING id, from_user_id, to_user_id, title, content, is_read, created_at, read_at
+`
+
+type UpdateMessageStateParams struct {
+	ID     int64     `json:"id"`
+	IsRead bool      `json:"is_read"`
+	ReadAt time.Time `json:"read_at"`
+}
+
+func (q *Queries) UpdateMessageState(ctx context.Context, arg UpdateMessageStateParams) (Message, error) {
+	row := q.db.QueryRowContext(ctx, updateMessageState, arg.ID, arg.IsRead, arg.ReadAt)
 	var i Message
 	err := row.Scan(
 		&i.ID,
