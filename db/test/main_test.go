@@ -8,6 +8,7 @@ import (
 
 	db "github.com/dongocanh96/class_manager_go/db/sqlc"
 	"github.com/dongocanh96/class_manager_go/util"
+	_ "github.com/lib/pq"
 )
 
 var testQueries *db.Queries

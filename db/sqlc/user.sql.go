@@ -10,50 +10,7 @@ import (
 	"time"
 )
 
-const createStudentUser = `-- name: CreateStudentUser :one
-INSERT INTO users (
-    username,
-    hashed_password,
-    fullname,
-    email,
-    phone_number
-) VALUES (
-    $1, $2, $3, $4, $5
-) RETURNING id, username, hashed_password, fullname, email, phone_number, password_changed_at, created_at, is_teacher
-`
-
-type CreateStudentUserParams struct {
-	Username       string `json:"username"`
-	HashedPassword string `json:"hashed_password"`
-	Fullname       string `json:"fullname"`
-	Email          string `json:"email"`
-	PhoneNumber    string `json:"phone_number"`
-}
-
-func (q *Queries) CreateStudentUser(ctx context.Context, arg CreateStudentUserParams) (User, error) {
-	row := q.db.QueryRowContext(ctx, createStudentUser,
-		arg.Username,
-		arg.HashedPassword,
-		arg.Fullname,
-		arg.Email,
-		arg.PhoneNumber,
-	)
-	var i User
-	err := row.Scan(
-		&i.ID,
-		&i.Username,
-		&i.HashedPassword,
-		&i.Fullname,
-		&i.Email,
-		&i.PhoneNumber,
-		&i.PasswordChangedAt,
-		&i.CreatedAt,
-		&i.IsTeacher,
-	)
-	return i, err
-}
-
-const createTeacherUser = `-- name: CreateTeacherUser :one
+const createUser = `-- name: CreateUser :one
 INSERT INTO users (
     username,
     hashed_password,
@@ -66,7 +23,7 @@ INSERT INTO users (
 ) RETURNING id, username, hashed_password, fullname, email, phone_number, password_changed_at, created_at, is_teacher
 `
 
-type CreateTeacherUserParams struct {
+type CreateUserParams struct {
 	Username       string `json:"username"`
 	HashedPassword string `json:"hashed_password"`
 	Fullname       string `json:"fullname"`
@@ -75,8 +32,8 @@ type CreateTeacherUserParams struct {
 	IsTeacher      bool   `json:"is_teacher"`
 }
 
-func (q *Queries) CreateTeacherUser(ctx context.Context, arg CreateTeacherUserParams) (User, error) {
-	row := q.db.QueryRowContext(ctx, createTeacherUser,
+func (q *Queries) CreateUser(ctx context.Context, arg CreateUserParams) (User, error) {
+	row := q.db.QueryRowContext(ctx, createUser,
 		arg.Username,
 		arg.HashedPassword,
 		arg.Fullname,
@@ -129,6 +86,53 @@ func (q *Queries) GetUser(ctx context.Context, id int64) (User, error) {
 		&i.IsTeacher,
 	)
 	return i, err
+}
+
+const listTeachersOrStudents = `-- name: ListTeachersOrStudents :many
+SELECT id, username, hashed_password, fullname, email, phone_number, password_changed_at, created_at, is_teacher FROM users
+WHERE is_teacher = $1
+ORDER BY id
+LIMIT $2
+OFFSET $3
+`
+
+type ListTeachersOrStudentsParams struct {
+	IsTeacher bool  `json:"is_teacher"`
+	Limit     int32 `json:"limit"`
+	Offset    int32 `json:"offset"`
+}
+
+func (q *Queries) ListTeachersOrStudents(ctx context.Context, arg ListTeachersOrStudentsParams) ([]User, error) {
+	rows, err := q.db.QueryContext(ctx, listTeachersOrStudents, arg.IsTeacher, arg.Limit, arg.Offset)
+	if err != nil {
+		return nil, err
+	}
+	defer rows.Close()
+	items := []User{}
+	for rows.Next() {
+		var i User
+		if err := rows.Scan(
+			&i.ID,
+			&i.Username,
+			&i.HashedPassword,
+			&i.Fullname,
+			&i.Email,
+			&i.PhoneNumber,
+			&i.PasswordChangedAt,
+			&i.CreatedAt,
+			&i.IsTeacher,
+		); err != nil {
+			return nil, err
+		}
+		items = append(items, i)
+	}
+	if err := rows.Close(); err != nil {
+		return nil, err
+	}
+	if err := rows.Err(); err != nil {
+		return nil, err
+	}
+	return items, nil
 }
 
 const listUsers = `-- name: ListUsers :many
@@ -236,47 +240,20 @@ func (q *Queries) UpdateFullname(ctx context.Context, arg UpdateFullnameParams) 
 
 const updateHashedPassword = `-- name: UpdateHashedPassword :one
 UPDATE users
-SET hashed_password = $2
+SET hashed_password = $2,
+    password_changed_at = $3
 WHERE id = $1
 RETURNING id, username, hashed_password, fullname, email, phone_number, password_changed_at, created_at, is_teacher
 `
 
 type UpdateHashedPasswordParams struct {
-	ID             int64  `json:"id"`
-	HashedPassword string `json:"hashed_password"`
-}
-
-func (q *Queries) UpdateHashedPassword(ctx context.Context, arg UpdateHashedPasswordParams) (User, error) {
-	row := q.db.QueryRowContext(ctx, updateHashedPassword, arg.ID, arg.HashedPassword)
-	var i User
-	err := row.Scan(
-		&i.ID,
-		&i.Username,
-		&i.HashedPassword,
-		&i.Fullname,
-		&i.Email,
-		&i.PhoneNumber,
-		&i.PasswordChangedAt,
-		&i.CreatedAt,
-		&i.IsTeacher,
-	)
-	return i, err
-}
-
-const updatePasswordChangedTime = `-- name: UpdatePasswordChangedTime :one
-UPDATE users
-SET password_changed_at = $2
-WHERE id = $1
-RETURNING id, username, hashed_password, fullname, email, phone_number, password_changed_at, created_at, is_teacher
-`
-
-type UpdatePasswordChangedTimeParams struct {
 	ID                int64     `json:"id"`
+	HashedPassword    string    `json:"hashed_password"`
 	PasswordChangedAt time.Time `json:"password_changed_at"`
 }
 
-func (q *Queries) UpdatePasswordChangedTime(ctx context.Context, arg UpdatePasswordChangedTimeParams) (User, error) {
-	row := q.db.QueryRowContext(ctx, updatePasswordChangedTime, arg.ID, arg.PasswordChangedAt)
+func (q *Queries) UpdateHashedPassword(ctx context.Context, arg UpdateHashedPasswordParams) (User, error) {
+	row := q.db.QueryRowContext(ctx, updateHashedPassword, arg.ID, arg.HashedPassword, arg.PasswordChangedAt)
 	var i User
 	err := row.Scan(
 		&i.ID,
@@ -321,20 +298,20 @@ func (q *Queries) UpdatePhoneNumber(ctx context.Context, arg UpdatePhoneNumberPa
 	return i, err
 }
 
-const updateUserName = `-- name: UpdateUserName :one
+const updateUsername = `-- name: UpdateUsername :one
 UPDATE users
 SET username = $2
 WHERE id = $1
 RETURNING id, username, hashed_password, fullname, email, phone_number, password_changed_at, created_at, is_teacher
 `
 
-type UpdateUserNameParams struct {
+type UpdateUsernameParams struct {
 	ID       int64  `json:"id"`
 	Username string `json:"username"`
 }
 
-func (q *Queries) UpdateUserName(ctx context.Context, arg UpdateUserNameParams) (User, error) {
-	row := q.db.QueryRowContext(ctx, updateUserName, arg.ID, arg.Username)
+func (q *Queries) UpdateUsername(ctx context.Context, arg UpdateUsernameParams) (User, error) {
+	row := q.db.QueryRowContext(ctx, updateUsername, arg.ID, arg.Username)
 	var i User
 	err := row.Scan(
 		&i.ID,

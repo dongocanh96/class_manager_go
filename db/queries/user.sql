@@ -1,4 +1,4 @@
--- name: CreateTeacherUser :one
+-- name: CreateUser :one
 INSERT INTO users (
     username,
     hashed_password,
@@ -8,17 +8,6 @@ INSERT INTO users (
     is_teacher
 ) VALUES (
     $1, $2, $3, $4, $5, $6
-) RETURNING *;
-
--- name: CreateStudentUser :one
-INSERT INTO users (
-    username,
-    hashed_password,
-    fullname,
-    email,
-    phone_number
-) VALUES (
-    $1, $2, $3, $4, $5
 ) RETURNING *;
 
 -- name: GetUser :one
@@ -31,7 +20,14 @@ ORDER BY id
 LIMIT $1
 OFFSET $2;
 
--- name: UpdateUserName :one
+-- name: ListTeachersOrStudents :many
+SELECT * FROM users
+WHERE is_teacher = $1
+ORDER BY id
+LIMIT $2
+OFFSET $3;
+
+-- name: UpdateUsername :one
 UPDATE users
 SET username = $2
 WHERE id = $1
@@ -39,7 +35,8 @@ RETURNING *;
 
 -- name: UpdateHashedPassword :one
 UPDATE users
-SET hashed_password = $2
+SET hashed_password = $2,
+    password_changed_at = $3
 WHERE id = $1
 RETURNING *;
 
@@ -58,12 +55,6 @@ RETURNING *;
 -- name: UpdatePhoneNumber :one
 UPDATE users
 SET phone_number = $2
-WHERE id = $1
-RETURNING *;
-
--- name: UpdatePasswordChangedTime :one
-UPDATE users
-SET password_changed_at = $2
 WHERE id = $1
 RETURNING *;
 
