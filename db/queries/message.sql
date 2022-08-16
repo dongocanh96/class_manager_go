@@ -38,9 +38,14 @@ OFFSET $3;
 -- name: UpdateMessage :one
 UPDATE messages
 SET title = $2,
-    content = $3,
-    is_read = $4,
-    read_at = $5
+    content = $3
+WHERE id = $1
+RETURNING *;
+
+-- name: UpdateMessageState :one
+UPDATE messages
+SET is_read = $2,
+    read_at = $3
 WHERE id = $1
 RETURNING *;
 
