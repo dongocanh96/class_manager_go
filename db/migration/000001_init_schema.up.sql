@@ -37,7 +37,6 @@ CREATE TABLE "messages" (
   "id" bigserial PRIMARY KEY,
   "from_user_id" bigint NOT NULL,
   "to_user_id" bigint NOT NULL,
-  "title" varchar(256) NOT NULL,
   "content" varchar(5000) NOT NULL,
   "is_read" boolean NOT NULL DEFAULT false,
   "created_at" timestamptz NOT NULL DEFAULT (now()),

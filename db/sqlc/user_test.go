@@ -2,6 +2,7 @@ package db
 
 import (
 	"context"
+	"database/sql"
 	"testing"
 	"time"
 
@@ -122,8 +123,12 @@ func TestGetUser(t *testing.T) {
 
 func TestDeleteUser(t *testing.T) {
 	user := createRandomUser(t)
+
 	err := testQueries.DeleteUser(context.Background(), user.ID)
 	require.NoError(t, err)
+
+	_, err = testQueries.GetUser(context.Background(), user.ID)
+	require.Error(t, sql.ErrNoRows, err)
 }
 
 func TestListUser(t *testing.T) {
