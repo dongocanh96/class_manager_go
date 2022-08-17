@@ -25,7 +25,6 @@ type Message struct {
 	ID         int64     `json:"id"`
 	FromUserID int64     `json:"from_user_id"`
 	ToUserID   int64     `json:"to_user_id"`
-	Title      string    `json:"title"`
 	Content    string    `json:"content"`
 	IsRead     bool      `json:"is_read"`
 	CreatedAt  time.Time `json:"created_at"`

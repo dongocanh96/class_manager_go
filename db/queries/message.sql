@@ -2,10 +2,9 @@
 INSERT INTO messages (
   from_user_id,
   to_user_id,
-  title,
   content
 ) VALUES (
-  $1, $2, $3, $4
+  $1, $2, $3
 ) RETURNING *;
 
 -- name: GetMessage :one
@@ -37,8 +36,7 @@ OFFSET $3;
 
 -- name: UpdateMessage :one
 UPDATE messages
-SET title = $2,
-    content = $3
+SET content = $2
 WHERE id = $1
 RETURNING *;
 

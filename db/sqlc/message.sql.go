@@ -14,33 +14,25 @@ const createMessage = `-- name: CreateMessage :one
 INSERT INTO messages (
   from_user_id,
   to_user_id,
-  title,
   content
 ) VALUES (
-  $1, $2, $3, $4
-) RETURNING id, from_user_id, to_user_id, title, content, is_read, created_at, read_at
+  $1, $2, $3
+) RETURNING id, from_user_id, to_user_id, content, is_read, created_at, read_at
 `
 
 type CreateMessageParams struct {
 	FromUserID int64  `json:"from_user_id"`
 	ToUserID   int64  `json:"to_user_id"`
-	Title      string `json:"title"`
 	Content    string `json:"content"`
 }
 
 func (q *Queries) CreateMessage(ctx context.Context, arg CreateMessageParams) (Message, error) {
-	row := q.db.QueryRowContext(ctx, createMessage,
-		arg.FromUserID,
-		arg.ToUserID,
-		arg.Title,
-		arg.Content,
-	)
+	row := q.db.QueryRowContext(ctx, createMessage, arg.FromUserID, arg.ToUserID, arg.Content)
 	var i Message
 	err := row.Scan(
 		&i.ID,
 		&i.FromUserID,
 		&i.ToUserID,
-		&i.Title,
 		&i.Content,
 		&i.IsRead,
 		&i.CreatedAt,
@@ -60,7 +52,7 @@ func (q *Queries) DeleteMessage(ctx context.Context, id int64) error {
 }
 
 const getMessage = `-- name: GetMessage :one
-SELECT id, from_user_id, to_user_id, title, content, is_read, created_at, read_at FROM messages
+SELECT id, from_user_id, to_user_id, content, is_read, created_at, read_at FROM messages
 WHERE id = $1 LIMIT 1
 `
 
@@ -71,7 +63,6 @@ func (q *Queries) GetMessage(ctx context.Context, id int64) (Message, error) {
 		&i.ID,
 		&i.FromUserID,
 		&i.ToUserID,
-		&i.Title,
 		&i.Content,
 		&i.IsRead,
 		&i.CreatedAt,
@@ -81,7 +72,7 @@ func (q *Queries) GetMessage(ctx context.Context, id int64) (Message, error) {
 }
 
 const listMessages = `-- name: ListMessages :many
-SELECT id, from_user_id, to_user_id, title, content, is_read, created_at, read_at FROM messages
+SELECT id, from_user_id, to_user_id, content, is_read, created_at, read_at FROM messages
 WHERE 
     from_user_id = $1 OR
     to_user_id = $2
@@ -115,7 +106,6 @@ func (q *Queries) ListMessages(ctx context.Context, arg ListMessagesParams) ([]M
 			&i.ID,
 			&i.FromUserID,
 			&i.ToUserID,
-			&i.Title,
 			&i.Content,
 			&i.IsRead,
 			&i.CreatedAt,
@@ -135,7 +125,7 @@ func (q *Queries) ListMessages(ctx context.Context, arg ListMessagesParams) ([]M
 }
 
 const listMessagesFromUser = `-- name: ListMessagesFromUser :many
-SELECT id, from_user_id, to_user_id, title, content, is_read, created_at, read_at FROM messages
+SELECT id, from_user_id, to_user_id, content, is_read, created_at, read_at FROM messages
 WHERE from_user_id = $1
 ORDER BY id
 LIMIT $2
@@ -161,7 +151,6 @@ func (q *Queries) ListMessagesFromUser(ctx context.Context, arg ListMessagesFrom
 			&i.ID,
 			&i.FromUserID,
 			&i.ToUserID,
-			&i.Title,
 			&i.Content,
 			&i.IsRead,
 			&i.CreatedAt,
@@ -181,7 +170,7 @@ func (q *Queries) ListMessagesFromUser(ctx context.Context, arg ListMessagesFrom
 }
 
 const listMessagesToUser = `-- name: ListMessagesToUser :many
-SELECT id, from_user_id, to_user_id, title, content, is_read, created_at, read_at FROM messages
+SELECT id, from_user_id, to_user_id, content, is_read, created_at, read_at FROM messages
 WHERE to_user_id = $1
 ORDER BY id
 LIMIT $2
@@ -207,7 +196,6 @@ func (q *Queries) ListMessagesToUser(ctx context.Context, arg ListMessagesToUser
 			&i.ID,
 			&i.FromUserID,
 			&i.ToUserID,
-			&i.Title,
 			&i.Content,
 			&i.IsRead,
 			&i.CreatedAt,
@@ -228,26 +216,23 @@ func (q *Queries) ListMessagesToUser(ctx context.Context, arg ListMessagesToUser
 
 const updateMessage = `-- name: UpdateMessage :one
 UPDATE messages
-SET title = $2,
-    content = $3
+SET content = $2
 WHERE id = $1
-RETURNING id, from_user_id, to_user_id, title, content, is_read, created_at, read_at
+RETURNING id, from_user_id, to_user_id, content, is_read, created_at, read_at
 `
 
 type UpdateMessageParams struct {
 	ID      int64  `json:"id"`
-	Title   string `json:"title"`
 	Content string `json:"content"`
 }
 
 func (q *Queries) UpdateMessage(ctx context.Context, arg UpdateMessageParams) (Message, error) {
-	row := q.db.QueryRowContext(ctx, updateMessage, arg.ID, arg.Title, arg.Content)
+	row := q.db.QueryRowContext(ctx, updateMessage, arg.ID, arg.Content)
 	var i Message
 	err := row.Scan(
 		&i.ID,
 		&i.FromUserID,
 		&i.ToUserID,
-		&i.Title,
 		&i.Content,
 		&i.IsRead,
 		&i.CreatedAt,
@@ -261,7 +246,7 @@ UPDATE messages
 SET is_read = $2,
     read_at = $3
 WHERE id = $1
-RETURNING id, from_user_id, to_user_id, title, content, is_read, created_at, read_at
+RETURNING id, from_user_id, to_user_id, content, is_read, created_at, read_at
 `
 
 type UpdateMessageStateParams struct {
@@ -277,7 +262,6 @@ func (q *Queries) UpdateMessageState(ctx context.Context, arg UpdateMessageState
 		&i.ID,
 		&i.FromUserID,
 		&i.ToUserID,
-		&i.Title,
 		&i.Content,
 		&i.IsRead,
 		&i.CreatedAt,
