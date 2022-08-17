@@ -6,12 +6,11 @@ import (
 	"os"
 	"testing"
 
-	db "github.com/dongocanh96/class_manager_go/db/sqlc"
 	"github.com/dongocanh96/class_manager_go/util"
 	_ "github.com/lib/pq"
 )
 
-var testQueries *db.Queries
+var testQueries *Queries
 var testDB *sql.DB
 
 func TestMain(m *testing.M) {
@@ -25,7 +24,7 @@ func TestMain(m *testing.M) {
 		log.Fatal("cannot connect to db:", err)
 	}
 
-	testQueries = db.New(testDB)
+	testQueries = New(testDB)
 
 	os.Exit((m.Run()))
 }

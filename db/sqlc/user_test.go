@@ -5,16 +5,15 @@ import (
 	"testing"
 	"time"
 
-	db "github.com/dongocanh96/class_manager_go/db/sqlc"
 	"github.com/dongocanh96/class_manager_go/util"
 	"github.com/stretchr/testify/require"
 )
 
-func createRandomUser(t *testing.T) db.User {
+func createRandomUser(t *testing.T) User {
 	hashPassword, err := util.HashPassword(util.RandomString(6))
 	require.NoError(t, err)
 
-	arg := db.CreateUserParams{
+	arg := CreateUserParams{
 		Username:       util.RandomString(6),
 		HashedPassword: hashPassword,
 		Fullname:       util.RandomString(6),
@@ -39,11 +38,11 @@ func createRandomUser(t *testing.T) db.User {
 	return user
 }
 
-func createRandomTeacher(t *testing.T) db.User {
+func createRandomTeacher(t *testing.T) User {
 	hashPassword, err := util.HashPassword(util.RandomString(6))
 	require.NoError(t, err)
 
-	arg := db.CreateUserParams{
+	arg := CreateUserParams{
 		Username:       util.RandomString(6),
 		HashedPassword: hashPassword,
 		Fullname:       util.RandomString(6),
@@ -68,11 +67,11 @@ func createRandomTeacher(t *testing.T) db.User {
 	return user
 }
 
-func createRandomStudent(t *testing.T) db.User {
+func createRandomStudent(t *testing.T) User {
 	hashPassword, err := util.HashPassword(util.RandomString(6))
 	require.NoError(t, err)
 
-	arg := db.CreateUserParams{
+	arg := CreateUserParams{
 		Username:       util.RandomString(6),
 		HashedPassword: hashPassword,
 		Fullname:       util.RandomString(6),
@@ -132,7 +131,7 @@ func TestListUser(t *testing.T) {
 		createRandomUser(t)
 	}
 
-	arg := db.ListUsersParams{
+	arg := ListUsersParams{
 		Limit:  10,
 		Offset: 0,
 	}
@@ -155,7 +154,7 @@ func TestListTeacher(t *testing.T) {
 		createRandomTeacher(t)
 	}
 
-	arg := db.ListTeachersOrStudentsParams{
+	arg := ListTeachersOrStudentsParams{
 		IsTeacher: true,
 		Limit:     10,
 		Offset:    0,
@@ -179,7 +178,7 @@ func TestListStudent(t *testing.T) {
 		createRandomStudent(t)
 	}
 
-	arg := db.ListTeachersOrStudentsParams{
+	arg := ListTeachersOrStudentsParams{
 		IsTeacher: false,
 		Limit:     10,
 		Offset:    0,
@@ -201,7 +200,7 @@ func TestListStudent(t *testing.T) {
 func TestUpdateUsername(t *testing.T) {
 	user1 := createRandomUser(t)
 
-	arg := db.UpdateUsernameParams{
+	arg := UpdateUsernameParams{
 		ID:       user1.ID,
 		Username: "ngoc anh",
 	}
@@ -229,7 +228,7 @@ func TestUpdateHashedPassword(t *testing.T) {
 	newHashedPassword, err := util.HashPassword(util.RandomString(6))
 	require.NoError(t, err)
 
-	arg := db.UpdateHashedPasswordParams{
+	arg := UpdateHashedPasswordParams{
 		ID:                user1.ID,
 		HashedPassword:    newHashedPassword,
 		PasswordChangedAt: time.Now(),
@@ -256,7 +255,7 @@ func TestUpdateFullName(t *testing.T) {
 	user1 := createRandomUser(t)
 	fullname := util.RandomString(6)
 
-	arg := db.UpdateFullnameParams{
+	arg := UpdateFullnameParams{
 		ID:       user1.ID,
 		Fullname: fullname,
 	}
@@ -283,7 +282,7 @@ func TestUpdateEmail(t *testing.T) {
 	user1 := createRandomUser(t)
 	email := util.RandomEmail()
 
-	arg := db.UpdateEmailParams{
+	arg := UpdateEmailParams{
 		ID:    user1.ID,
 		Email: email,
 	}
@@ -310,7 +309,7 @@ func TestUpdatePhoneNumber(t *testing.T) {
 	user1 := createRandomUser(t)
 	phoneNumber := util.RandomPhoneNumber()
 
-	arg := db.UpdatePhoneNumberParams{
+	arg := UpdatePhoneNumberParams{
 		ID:          user1.ID,
 		PhoneNumber: phoneNumber,
 	}
