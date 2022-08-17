@@ -27,6 +27,7 @@ func createRandomUser(t *testing.T) User {
 	require.NoError(t, err)
 	require.NotEmpty(t, user)
 
+	require.NotZero(t, user.ID)
 	require.Equal(t, arg.Username, user.Username)
 	require.Equal(t, arg.HashedPassword, user.HashedPassword)
 	require.Equal(t, arg.Fullname, user.Fullname)
@@ -56,6 +57,7 @@ func createRandomTeacher(t *testing.T) User {
 	require.NoError(t, err)
 	require.NotEmpty(t, user)
 
+	require.NotZero(t, user.ID)
 	require.Equal(t, arg.Username, user.Username)
 	require.Equal(t, arg.HashedPassword, user.HashedPassword)
 	require.Equal(t, arg.Fullname, user.Fullname)
@@ -85,6 +87,7 @@ func createRandomStudent(t *testing.T) User {
 	require.NoError(t, err)
 	require.NotEmpty(t, user)
 
+	require.NotZero(t, user.ID)
 	require.Equal(t, arg.Username, user.Username)
 	require.Equal(t, arg.HashedPassword, user.HashedPassword)
 	require.Equal(t, arg.Fullname, user.Fullname)

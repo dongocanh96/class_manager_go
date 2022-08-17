@@ -13,14 +13,21 @@ INSERT INTO homeworks (
 SELECT * FROM homeworks
 WHERE id = $1 LIMIT 1;
 
--- name: ListHomeworkByTeacherId :many
+-- name: ListHomeworksByTeacher :many
 SELECT * FROM homeworks
 WHERE teacher_id = $1
 ORDER BY id
 LIMIT $2
 OFFSET $3;
 
--- name: ListHomework :many
+-- name: ListHomeworksBySubject :many
+SELECT * FROM homeworks
+WHERE subject = $1
+ORDER BY id
+LIMIT $2
+OFFSET $3;
+
+-- name: ListHomeworks :many
 SELECT * FROM homeworks
 ORDER BY id
 LIMIT $1

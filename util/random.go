@@ -51,3 +51,13 @@ func RandomEmail() string {
 func RandomBoolean() bool {
 	return rand.Float32() < 0.5
 }
+
+func RandomSubject() string {
+	n := len(Subjects)
+	subjects := make([]string, n)
+	for _, value := range Subjects {
+		subjects = append(subjects, value)
+	}
+
+	return subjects[rand.Intn(n)]
+}

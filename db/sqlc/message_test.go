@@ -21,6 +21,7 @@ func createRandomMessage(t *testing.T, user1, user2 User) Message {
 	require.NoError(t, err)
 	require.NotEmpty(t, message)
 
+	require.NotZero(t, message.ID)
 	require.Equal(t, arg.FromUserID, message.FromUserID)
 	require.Equal(t, arg.ToUserID, message.ToUserID)
 	require.Equal(t, arg.Content, message.Content)
@@ -55,6 +56,9 @@ func TestGetMessage(t *testing.T) {
 	require.Equal(t, message1.FromUserID, message2.FromUserID)
 	require.Equal(t, message1.ToUserID, message2.ToUserID)
 	require.Equal(t, message1.Content, message2.Content)
+	require.Equal(t, message1.IsRead, message2.IsRead)
+	require.WithinDuration(t, message1.CreatedAt, message2.CreatedAt, time.Second)
+	require.WithinDuration(t, message1.ReadAt, message2.ReadAt, time.Second)
 
 	testQueries.DeleteMessage(context.Background(), message1.ID)
 	testQueries.DeleteUser(context.Background(), user1.ID)

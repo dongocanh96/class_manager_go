@@ -119,20 +119,20 @@ func (q *Queries) GetHomework(ctx context.Context, id int64) (Homework, error) {
 	return i, err
 }
 
-const listHomework = `-- name: ListHomework :many
+const listHomeworks = `-- name: ListHomeworks :many
 SELECT id, teacher_id, subject, title, file_name, saved_path, is_closed, created_at, updated_at, closed_at FROM homeworks
 ORDER BY id
 LIMIT $1
 OFFSET $2
 `
 
-type ListHomeworkParams struct {
+type ListHomeworksParams struct {
 	Limit  int32 `json:"limit"`
 	Offset int32 `json:"offset"`
 }
 
-func (q *Queries) ListHomework(ctx context.Context, arg ListHomeworkParams) ([]Homework, error) {
-	rows, err := q.db.QueryContext(ctx, listHomework, arg.Limit, arg.Offset)
+func (q *Queries) ListHomeworks(ctx context.Context, arg ListHomeworksParams) ([]Homework, error) {
+	rows, err := q.db.QueryContext(ctx, listHomeworks, arg.Limit, arg.Offset)
 	if err != nil {
 		return nil, err
 	}
@@ -165,7 +165,55 @@ func (q *Queries) ListHomework(ctx context.Context, arg ListHomeworkParams) ([]H
 	return items, nil
 }
 
-const listHomeworkByTeacherId = `-- name: ListHomeworkByTeacherId :many
+const listHomeworksBySubject = `-- name: ListHomeworksBySubject :many
+SELECT id, teacher_id, subject, title, file_name, saved_path, is_closed, created_at, updated_at, closed_at FROM homeworks
+WHERE subject = $1
+ORDER BY id
+LIMIT $2
+OFFSET $3
+`
+
+type ListHomeworksBySubjectParams struct {
+	Subject string `json:"subject"`
+	Limit   int32  `json:"limit"`
+	Offset  int32  `json:"offset"`
+}
+
+func (q *Queries) ListHomeworksBySubject(ctx context.Context, arg ListHomeworksBySubjectParams) ([]Homework, error) {
+	rows, err := q.db.QueryContext(ctx, listHomeworksBySubject, arg.Subject, arg.Limit, arg.Offset)
+	if err != nil {
+		return nil, err
+	}
+	defer rows.Close()
+	items := []Homework{}
+	for rows.Next() {
+		var i Homework
+		if err := rows.Scan(
+			&i.ID,
+			&i.TeacherID,
+			&i.Subject,
+			&i.Title,
+			&i.FileName,
+			&i.SavedPath,
+			&i.IsClosed,
+			&i.CreatedAt,
+			&i.UpdatedAt,
+			&i.ClosedAt,
+		); err != nil {
+			return nil, err
+		}
+		items = append(items, i)
+	}
+	if err := rows.Close(); err != nil {
+		return nil, err
+	}
+	if err := rows.Err(); err != nil {
+		return nil, err
+	}
+	return items, nil
+}
+
+const listHomeworksByTeacher = `-- name: ListHomeworksByTeacher :many
 SELECT id, teacher_id, subject, title, file_name, saved_path, is_closed, created_at, updated_at, closed_at FROM homeworks
 WHERE teacher_id = $1
 ORDER BY id
@@ -173,14 +221,14 @@ LIMIT $2
 OFFSET $3
 `
 
-type ListHomeworkByTeacherIdParams struct {
+type ListHomeworksByTeacherParams struct {
 	TeacherID int64 `json:"teacher_id"`
 	Limit     int32 `json:"limit"`
 	Offset    int32 `json:"offset"`
 }
 
-func (q *Queries) ListHomeworkByTeacherId(ctx context.Context, arg ListHomeworkByTeacherIdParams) ([]Homework, error) {
-	rows, err := q.db.QueryContext(ctx, listHomeworkByTeacherId, arg.TeacherID, arg.Limit, arg.Offset)
+func (q *Queries) ListHomeworksByTeacher(ctx context.Context, arg ListHomeworksByTeacherParams) ([]Homework, error) {
+	rows, err := q.db.QueryContext(ctx, listHomeworksByTeacher, arg.TeacherID, arg.Limit, arg.Offset)
 	if err != nil {
 		return nil, err
 	}
