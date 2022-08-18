@@ -8,7 +8,12 @@ INSERT INTO solutions (
     $1, $2, $3, $4
 ) RETURNING *;
 
--- name: GetSolution :one
+-- name: GetSolutionByID :one
+SELECT * FROM solutions
+WHERE id = $1
+LIMIT 1;
+
+-- name: GetSolutionByProblemAndUser :one
 SELECT * FROM solutions
 WHERE problem_id = $1 AND user_id = $2
 LIMIT 1;
@@ -30,19 +35,16 @@ OFFSET $3;
 
 -- name: ListSolutions :many
 SELECT * FROM solutions
-WHERE 
-    user_id = $1 OR
-    problem_id = $2
 ORDER BY id
-LIMIT $3
-OFFSET $4;
+LIMIT $1
+OFFSET $2;
 
 -- name: UpdateSolution :one
 UPDATE solutions
 SET file_name = $2,
     saved_path = $3,
     updated_at = $4
-WHERE user_id = $1
+WHERE id = $1
 RETURNING *;
 
 -- name: DeleteSolution :exec

@@ -58,19 +58,40 @@ func (q *Queries) DeleteSolution(ctx context.Context, id int64) error {
 	return err
 }
 
-const getSolution = `-- name: GetSolution :one
+const getSolutionByID = `-- name: GetSolutionByID :one
+SELECT id, problem_id, user_id, file_name, saved_path, submited_at, updated_at FROM solutions
+WHERE id = $1
+LIMIT 1
+`
+
+func (q *Queries) GetSolutionByID(ctx context.Context, id int64) (Solution, error) {
+	row := q.db.QueryRowContext(ctx, getSolutionByID, id)
+	var i Solution
+	err := row.Scan(
+		&i.ID,
+		&i.ProblemID,
+		&i.UserID,
+		&i.FileName,
+		&i.SavedPath,
+		&i.SubmitedAt,
+		&i.UpdatedAt,
+	)
+	return i, err
+}
+
+const getSolutionByProblemAndUser = `-- name: GetSolutionByProblemAndUser :one
 SELECT id, problem_id, user_id, file_name, saved_path, submited_at, updated_at FROM solutions
 WHERE problem_id = $1 AND user_id = $2
 LIMIT 1
 `
 
-type GetSolutionParams struct {
+type GetSolutionByProblemAndUserParams struct {
 	ProblemID int64 `json:"problem_id"`
 	UserID    int64 `json:"user_id"`
 }
 
-func (q *Queries) GetSolution(ctx context.Context, arg GetSolutionParams) (Solution, error) {
-	row := q.db.QueryRowContext(ctx, getSolution, arg.ProblemID, arg.UserID)
+func (q *Queries) GetSolutionByProblemAndUser(ctx context.Context, arg GetSolutionByProblemAndUserParams) (Solution, error) {
+	row := q.db.QueryRowContext(ctx, getSolutionByProblemAndUser, arg.ProblemID, arg.UserID)
 	var i Solution
 	err := row.Scan(
 		&i.ID,
@@ -86,28 +107,18 @@ func (q *Queries) GetSolution(ctx context.Context, arg GetSolutionParams) (Solut
 
 const listSolutions = `-- name: ListSolutions :many
 SELECT id, problem_id, user_id, file_name, saved_path, submited_at, updated_at FROM solutions
-WHERE 
-    user_id = $1 OR
-    problem_id = $2
 ORDER BY id
-LIMIT $3
-OFFSET $4
+LIMIT $1
+OFFSET $2
 `
 
 type ListSolutionsParams struct {
-	UserID    int64 `json:"user_id"`
-	ProblemID int64 `json:"problem_id"`
-	Limit     int32 `json:"limit"`
-	Offset    int32 `json:"offset"`
+	Limit  int32 `json:"limit"`
+	Offset int32 `json:"offset"`
 }
 
 func (q *Queries) ListSolutions(ctx context.Context, arg ListSolutionsParams) ([]Solution, error) {
-	rows, err := q.db.QueryContext(ctx, listSolutions,
-		arg.UserID,
-		arg.ProblemID,
-		arg.Limit,
-		arg.Offset,
-	)
+	rows, err := q.db.QueryContext(ctx, listSolutions, arg.Limit, arg.Offset)
 	if err != nil {
 		return nil, err
 	}
@@ -232,12 +243,12 @@ UPDATE solutions
 SET file_name = $2,
     saved_path = $3,
     updated_at = $4
-WHERE user_id = $1
+WHERE id = $1
 RETURNING id, problem_id, user_id, file_name, saved_path, submited_at, updated_at
 `
 
 type UpdateSolutionParams struct {
-	UserID    int64     `json:"user_id"`
+	ID        int64     `json:"id"`
 	FileName  string    `json:"file_name"`
 	SavedPath string    `json:"saved_path"`
 	UpdatedAt time.Time `json:"updated_at"`
@@ -245,7 +256,7 @@ type UpdateSolutionParams struct {
 
 func (q *Queries) UpdateSolution(ctx context.Context, arg UpdateSolutionParams) (Solution, error) {
 	row := q.db.QueryRowContext(ctx, updateSolution,
-		arg.UserID,
+		arg.ID,
 		arg.FileName,
 		arg.SavedPath,
 		arg.UpdatedAt,
