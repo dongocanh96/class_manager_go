@@ -86,6 +86,10 @@ func TestDeleteSolution(t *testing.T) {
 
 	_, err = testQueries.GetSolutionByID(context.Background(), solution.ID)
 	require.Error(t, sql.ErrNoRows, err)
+
+	testQueries.DeleteHomework(context.Background(), homework.ID)
+	testQueries.DeleteUser(context.Background(), teacher.ID)
+	testQueries.DeleteUser(context.Background(), user.ID)
 }
 
 func TestGetSolutionByProblemAndUser(t *testing.T) {
