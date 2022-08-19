@@ -263,9 +263,9 @@ func (q *Queries) ListHomeworksByTeacher(ctx context.Context, arg ListHomeworksB
 
 const updateHomework = `-- name: UpdateHomework :one
 UPDATE homeworks
-SET title = $2,
-    file_name = $3,
-    saved_path = $4,
+SET title = COALESCE($2, title),
+    file_name = COALESCE($3, file_name),
+    saved_path = COALESCE($4, saved_path),
     updated_at = $5
 WHERE id = $1
 RETURNING id, teacher_id, subject, title, file_name, saved_path, is_closed, created_at, updated_at, closed_at

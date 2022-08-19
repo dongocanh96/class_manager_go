@@ -27,34 +27,14 @@ ORDER BY id
 LIMIT $2
 OFFSET $3;
 
--- name: UpdateUsername :one
+-- name: UpdateUser :one
 UPDATE users
-SET username = $2
-WHERE id = $1
-RETURNING *;
-
--- name: UpdateHashedPassword :one
-UPDATE users
-SET hashed_password = $2,
-    password_changed_at = $3
-WHERE id = $1
-RETURNING *;
-
--- name: UpdateFullname :one
-UPDATE users
-SET fullname = $2
-WHERE id = $1
-RETURNING *;
-
--- name: UpdateEmail :one
-UPDATE users
-SET email = $2
-WHERE id = $1
-RETURNING *;
-
--- name: UpdatePhoneNumber :one
-UPDATE users
-SET phone_number = $2
+SET username = COALESCE($2, username),
+    hashed_password = COALESCE($3, hashed_password),
+    password_changed_at = COALESCE($4, password_changed_at),
+    fullname = COALESCE($5, fullname),
+    email = COALESCE($6, email),
+    phone_number = COALESCE($7, phone_number)
 WHERE id = $1
 RETURNING *;
 
