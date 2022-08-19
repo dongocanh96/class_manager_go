@@ -10,10 +10,10 @@ import (
 	"github.com/stretchr/testify/require"
 )
 
-func createRandomMessage(t *testing.T, user1, user2 User) Message {
+func createRandomMessage(t *testing.T, user1ID, user2ID int64) Message {
 	arg := CreateMessageParams{
-		FromUserID: user1.ID,
-		ToUserID:   user2.ID,
+		FromUserID: user1ID,
+		ToUserID:   user2ID,
 		Content:    util.RandomString(100),
 	}
 
@@ -36,7 +36,7 @@ func TestCreateMessage(t *testing.T) {
 	user1 := createRandomUser(t)
 	user2 := createRandomUser(t)
 
-	message := createRandomMessage(t, user1, user2)
+	message := createRandomMessage(t, user1.ID, user2.ID)
 	testQueries.DeleteMessage(context.Background(), message.ID)
 	testQueries.DeleteUser(context.Background(), user1.ID)
 	testQueries.DeleteUser(context.Background(), user2.ID)
@@ -46,7 +46,7 @@ func TestGetMessage(t *testing.T) {
 	user1 := createRandomUser(t)
 	user2 := createRandomUser(t)
 
-	message1 := createRandomMessage(t, user1, user2)
+	message1 := createRandomMessage(t, user1.ID, user2.ID)
 
 	message2, err := testQueries.GetMessage(context.Background(), message1.ID)
 	require.NoError(t, err)
@@ -69,13 +69,16 @@ func TestDeleteMessage(t *testing.T) {
 	user1 := createRandomUser(t)
 	user2 := createRandomUser(t)
 
-	message := createRandomMessage(t, user1, user2)
+	message := createRandomMessage(t, user1.ID, user2.ID)
 
 	err := testQueries.DeleteMessage(context.Background(), message.ID)
 	require.NoError(t, err)
 
 	_, err = testQueries.GetMessage(context.Background(), message.ID)
 	require.Error(t, sql.ErrNoRows, err)
+
+	testQueries.DeleteUser(context.Background(), user1.ID)
+	testQueries.DeleteUser(context.Background(), user2.ID)
 }
 
 func TestListMessages(t *testing.T) {
@@ -83,7 +86,7 @@ func TestListMessages(t *testing.T) {
 	user2 := createRandomUser(t)
 
 	for i := 0; i < 5; i++ {
-		createRandomMessage(t, user1, user2)
+		createRandomMessage(t, user1.ID, user2.ID)
 	}
 
 	arg := ListMessagesParams{
@@ -114,7 +117,7 @@ func TestListMessagesFromUser(t *testing.T) {
 	user2 := createRandomUser(t)
 
 	for i := 0; i < 5; i++ {
-		createRandomMessage(t, user1, user2)
+		createRandomMessage(t, user1.ID, user2.ID)
 	}
 
 	arg := ListMessagesFromUserParams{
@@ -144,7 +147,7 @@ func TestListMessagesToUser(t *testing.T) {
 	user2 := createRandomUser(t)
 
 	for i := 0; i < 5; i++ {
-		createRandomMessage(t, user1, user2)
+		createRandomMessage(t, user1.ID, user2.ID)
 	}
 
 	arg := ListMessagesToUserParams{
@@ -173,7 +176,7 @@ func TestUpdateMessage(t *testing.T) {
 	user1 := createRandomUser(t)
 	user2 := createRandomUser(t)
 
-	message1 := createRandomMessage(t, user1, user2)
+	message1 := createRandomMessage(t, user1.ID, user2.ID)
 
 	arg := UpdateMessageParams{
 		ID:      message1.ID,
@@ -201,7 +204,7 @@ func TestUpdateMessageState(t *testing.T) {
 	user1 := createRandomUser(t)
 	user2 := createRandomUser(t)
 
-	message1 := createRandomMessage(t, user1, user2)
+	message1 := createRandomMessage(t, user1.ID, user2.ID)
 
 	arg := UpdateMessageStateParams{
 		ID:     message1.ID,
