@@ -1,13 +1,13 @@
 CREATE TABLE "users" (
   "id" bigserial PRIMARY KEY,
-  "username" varchar UNIQUE NOT NULL,
+  "username" varchar UNIQUE,
   "hashed_password" varchar NOT NULL,
-  "fullname" varchar NOT NULL,
-  "email" varchar UNIQUE NOT NULL,
-  "phone_number" varchar UNIQUE NOT NULL,
+  "fullname" varchar,
+  "email" varchar UNIQUE,
+  "phone_number" varchar UNIQUE,
   "password_changed_at" timestamptz NOT NULL DEFAULT '0001-01-01 00:00:00Z',
   "created_at" timestamptz NOT NULL DEFAULT (now()),
-  "is_teacher" boolean NOT NULL DEFAULT false
+  "is_teacher" boolean DEFAULT false
 );
 
 CREATE TABLE "homeworks" (

@@ -5,6 +5,7 @@
 package db
 
 import (
+	"database/sql"
 	"time"
 )
 
@@ -42,13 +43,13 @@ type Solution struct {
 }
 
 type User struct {
-	ID                int64     `json:"id"`
-	Username          string    `json:"username"`
-	HashedPassword    string    `json:"hashed_password"`
-	Fullname          string    `json:"fullname"`
-	Email             string    `json:"email"`
-	PhoneNumber       string    `json:"phone_number"`
-	PasswordChangedAt time.Time `json:"password_changed_at"`
-	CreatedAt         time.Time `json:"created_at"`
-	IsTeacher         bool      `json:"is_teacher"`
+	ID                int64          `json:"id"`
+	Username          sql.NullString `json:"username"`
+	HashedPassword    string         `json:"hashed_password"`
+	Fullname          sql.NullString `json:"fullname"`
+	Email             sql.NullString `json:"email"`
+	PhoneNumber       sql.NullString `json:"phone_number"`
+	PasswordChangedAt time.Time      `json:"password_changed_at"`
+	CreatedAt         time.Time      `json:"created_at"`
+	IsTeacher         sql.NullBool   `json:"is_teacher"`
 }

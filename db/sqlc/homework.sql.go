@@ -263,17 +263,15 @@ func (q *Queries) ListHomeworksByTeacher(ctx context.Context, arg ListHomeworksB
 
 const updateHomework = `-- name: UpdateHomework :one
 UPDATE homeworks
-SET title = COALESCE($2, title),
-    file_name = COALESCE($3, file_name),
-    saved_path = COALESCE($4, saved_path),
-    updated_at = $5
+SET file_name = $2,
+    saved_path = $3,
+    updated_at = $4
 WHERE id = $1
 RETURNING id, teacher_id, subject, title, file_name, saved_path, is_closed, created_at, updated_at, closed_at
 `
 
 type UpdateHomeworkParams struct {
 	ID        int64     `json:"id"`
-	Title     string    `json:"title"`
 	FileName  string    `json:"file_name"`
 	SavedPath string    `json:"saved_path"`
 	UpdatedAt time.Time `json:"updated_at"`
@@ -282,7 +280,6 @@ type UpdateHomeworkParams struct {
 func (q *Queries) UpdateHomework(ctx context.Context, arg UpdateHomeworkParams) (Homework, error) {
 	row := q.db.QueryRowContext(ctx, updateHomework,
 		arg.ID,
-		arg.Title,
 		arg.FileName,
 		arg.SavedPath,
 		arg.UpdatedAt,

@@ -35,10 +35,9 @@ OFFSET $2;
 
 -- name: UpdateHomework :one
 UPDATE homeworks
-SET title = COALESCE($2, title),
-    file_name = COALESCE($3, file_name),
-    saved_path = COALESCE($4, saved_path),
-    updated_at = $5
+SET file_name = $2,
+    saved_path = $3,
+    updated_at = $4
 WHERE id = $1
 RETURNING *;
 
