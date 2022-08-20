@@ -57,14 +57,12 @@ func (store *Store) UpdateUserTx(ctx context.Context, arg UpdateUserTxParams) (U
 	err := store.execTx(ctx, func(q *Queries) error {
 		var err error
 
-		result.User, err = q.UpdateUser(ctx, UpdateUserParams{
-			ID:                arg.ID,
-			Username:          arg.Username,
-			HashedPassword:    arg.HashedPassword,
-			PasswordChangedAt: arg.PasswordChangedAt,
-			Fullname:          arg.Fullname,
-			Email:             arg.Email,
-			PhoneNumber:       arg.PhoneNumber,
+		result.User, err = q.UpdateUserInfo(ctx, UpdateUserInfoParams{
+			ID:          arg.ID,
+			Username:    sql.NullString{String: arg.Username, Valid: true},
+			Fullname:    sql.NullString{String: arg.Fullname, Valid: true},
+			Email:       sql.NullString{String: arg.Email, Valid: true},
+			PhoneNumber: sql.NullString{String: arg.PhoneNumber, Valid: true},
 		})
 
 		if err != nil {

@@ -7,6 +7,7 @@ package db
 
 import (
 	"context"
+	"database/sql"
 	"time"
 )
 
@@ -24,12 +25,12 @@ INSERT INTO users (
 `
 
 type CreateUserParams struct {
-	Username       string `json:"username"`
-	HashedPassword string `json:"hashed_password"`
-	Fullname       string `json:"fullname"`
-	Email          string `json:"email"`
-	PhoneNumber    string `json:"phone_number"`
-	IsTeacher      bool   `json:"is_teacher"`
+	Username       sql.NullString `json:"username"`
+	HashedPassword string         `json:"hashed_password"`
+	Fullname       sql.NullString `json:"fullname"`
+	Email          sql.NullString `json:"email"`
+	PhoneNumber    sql.NullString `json:"phone_number"`
+	IsTeacher      sql.NullBool   `json:"is_teacher"`
 }
 
 func (q *Queries) CreateUser(ctx context.Context, arg CreateUserParams) (User, error) {
@@ -97,9 +98,9 @@ OFFSET $3
 `
 
 type ListTeachersOrStudentsParams struct {
-	IsTeacher bool  `json:"is_teacher"`
-	Limit     int32 `json:"limit"`
-	Offset    int32 `json:"offset"`
+	IsTeacher sql.NullBool `json:"is_teacher"`
+	Limit     int32        `json:"limit"`
+	Offset    int32        `json:"offset"`
 }
 
 func (q *Queries) ListTeachersOrStudents(ctx context.Context, arg ListTeachersOrStudentsParams) ([]User, error) {
@@ -180,38 +181,63 @@ func (q *Queries) ListUsers(ctx context.Context, arg ListUsersParams) ([]User, e
 	return items, nil
 }
 
-const updateUser = `-- name: UpdateUser :one
+const updateUserInfo = `-- name: UpdateUserInfo :one
 UPDATE users
 SET username = COALESCE($2, username),
-    hashed_password = COALESCE($3, hashed_password),
-    password_changed_at = COALESCE($4, password_changed_at),
-    fullname = COALESCE($5, fullname),
-    email = COALESCE($6, email),
-    phone_number = COALESCE($7, phone_number)
+    fullname = COALESCE($3, fullname),
+    email = COALESCE($4, email),
+    phone_number = COALESCE($5, phone_number)
 WHERE id = $1
 RETURNING id, username, hashed_password, fullname, email, phone_number, password_changed_at, created_at, is_teacher
 `
 
-type UpdateUserParams struct {
-	ID                int64     `json:"id"`
-	Username          string    `json:"username"`
-	HashedPassword    string    `json:"hashed_password"`
-	PasswordChangedAt time.Time `json:"password_changed_at"`
-	Fullname          string    `json:"fullname"`
-	Email             string    `json:"email"`
-	PhoneNumber       string    `json:"phone_number"`
+type UpdateUserInfoParams struct {
+	ID          int64          `json:"id"`
+	Username    sql.NullString `json:"username"`
+	Fullname    sql.NullString `json:"fullname"`
+	Email       sql.NullString `json:"email"`
+	PhoneNumber sql.NullString `json:"phone_number"`
 }
 
-func (q *Queries) UpdateUser(ctx context.Context, arg UpdateUserParams) (User, error) {
-	row := q.db.QueryRowContext(ctx, updateUser,
+func (q *Queries) UpdateUserInfo(ctx context.Context, arg UpdateUserInfoParams) (User, error) {
+	row := q.db.QueryRowContext(ctx, updateUserInfo,
 		arg.ID,
 		arg.Username,
-		arg.HashedPassword,
-		arg.PasswordChangedAt,
 		arg.Fullname,
 		arg.Email,
 		arg.PhoneNumber,
 	)
+	var i User
+	err := row.Scan(
+		&i.ID,
+		&i.Username,
+		&i.HashedPassword,
+		&i.Fullname,
+		&i.Email,
+		&i.PhoneNumber,
+		&i.PasswordChangedAt,
+		&i.CreatedAt,
+		&i.IsTeacher,
+	)
+	return i, err
+}
+
+const updateUserPassword = `-- name: UpdateUserPassword :one
+UPDATE users
+SET hashed_password = COALESCE($2, hashed_password),
+    password_changed_at = COALESCE($3, password_changed_at)
+WHERE id = $1
+RETURNING id, username, hashed_password, fullname, email, phone_number, password_changed_at, created_at, is_teacher
+`
+
+type UpdateUserPasswordParams struct {
+	ID                int64     `json:"id"`
+	HashedPassword    string    `json:"hashed_password"`
+	PasswordChangedAt time.Time `json:"password_changed_at"`
+}
+
+func (q *Queries) UpdateUserPassword(ctx context.Context, arg UpdateUserPasswordParams) (User, error) {
+	row := q.db.QueryRowContext(ctx, updateUserPassword, arg.ID, arg.HashedPassword, arg.PasswordChangedAt)
 	var i User
 	err := row.Scan(
 		&i.ID,

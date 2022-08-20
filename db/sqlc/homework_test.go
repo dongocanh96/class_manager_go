@@ -176,7 +176,6 @@ func TestUpdateHomework(t *testing.T) {
 
 	arg := UpdateHomeworkParams{
 		ID:        homework1.ID,
-		Title:     util.RandomString(10),
 		FileName:  util.RandomString(10),
 		SavedPath: util.RandomString(10),
 		UpdatedAt: time.Now(),
@@ -192,7 +191,7 @@ func TestUpdateHomework(t *testing.T) {
 	require.WithinDuration(t, homework1.CreatedAt, homework2.CreatedAt, time.Second)
 	require.WithinDuration(t, homework1.ClosedAt, homework2.ClosedAt, time.Second)
 
-	require.Equal(t, arg.Title, homework2.Title)
+	require.Equal(t, homework1.Title, homework2.Title)
 	require.Equal(t, arg.FileName, homework2.FileName)
 	require.Equal(t, arg.SavedPath, homework2.SavedPath)
 	require.WithinDuration(t, arg.UpdatedAt, homework2.UpdatedAt, time.Second)

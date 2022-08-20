@@ -15,12 +15,12 @@ func createRandomUser(t *testing.T) User {
 	require.NoError(t, err)
 
 	arg := CreateUserParams{
-		Username:       util.RandomString(6),
+		Username:       sql.NullString{String: util.RandomString(6), Valid: true},
 		HashedPassword: hashPassword,
-		Fullname:       util.RandomString(6),
-		Email:          util.RandomEmail(),
-		PhoneNumber:    util.RandomPhoneNumber(),
-		IsTeacher:      util.RandomBoolean(),
+		Fullname:       sql.NullString{String: util.RandomString(6), Valid: true},
+		Email:          sql.NullString{String: util.RandomEmail(), Valid: true},
+		PhoneNumber:    sql.NullString{String: util.RandomPhoneNumber(), Valid: true},
+		IsTeacher:      sql.NullBool{Bool: util.RandomBoolean(), Valid: true},
 	}
 
 	user, err := testQueries.CreateUser(context.Background(), arg)
@@ -45,12 +45,12 @@ func createRandomTeacher(t *testing.T) User {
 	require.NoError(t, err)
 
 	arg := CreateUserParams{
-		Username:       util.RandomString(6),
+		Username:       sql.NullString{String: util.RandomString(6), Valid: true},
 		HashedPassword: hashPassword,
-		Fullname:       util.RandomString(6),
-		Email:          util.RandomEmail(),
-		PhoneNumber:    util.RandomPhoneNumber(),
-		IsTeacher:      true,
+		Fullname:       sql.NullString{String: util.RandomString(6), Valid: true},
+		Email:          sql.NullString{String: util.RandomEmail(), Valid: true},
+		PhoneNumber:    sql.NullString{String: util.RandomPhoneNumber(), Valid: true},
+		IsTeacher:      sql.NullBool{Bool: true, Valid: true},
 	}
 
 	user, err := testQueries.CreateUser(context.Background(), arg)
@@ -75,12 +75,12 @@ func createRandomStudent(t *testing.T) User {
 	require.NoError(t, err)
 
 	arg := CreateUserParams{
-		Username:       util.RandomString(6),
+		Username:       sql.NullString{String: util.RandomString(6), Valid: true},
 		HashedPassword: hashPassword,
-		Fullname:       util.RandomString(6),
-		Email:          util.RandomEmail(),
-		PhoneNumber:    util.RandomPhoneNumber(),
-		IsTeacher:      false,
+		Fullname:       sql.NullString{String: util.RandomString(6), Valid: true},
+		Email:          sql.NullString{String: util.RandomEmail(), Valid: true},
+		PhoneNumber:    sql.NullString{String: util.RandomPhoneNumber(), Valid: true},
+		IsTeacher:      sql.NullBool{Bool: false, Valid: true},
 	}
 
 	user, err := testQueries.CreateUser(context.Background(), arg)
@@ -163,7 +163,7 @@ func TestListTeacher(t *testing.T) {
 	}
 
 	arg := ListTeachersOrStudentsParams{
-		IsTeacher: true,
+		IsTeacher: sql.NullBool{Bool: true, Valid: true},
 		Limit:     10,
 		Offset:    0,
 	}
@@ -187,7 +187,7 @@ func TestListStudent(t *testing.T) {
 	}
 
 	arg := ListTeachersOrStudentsParams{
-		IsTeacher: false,
+		IsTeacher: sql.NullBool{Bool: false, Valid: true},
 		Limit:     10,
 		Offset:    0,
 	}
@@ -205,35 +205,84 @@ func TestListStudent(t *testing.T) {
 	}
 }
 
-func TestUpdateUser(t *testing.T) {
+func TestUpdateUserInfo(t *testing.T) {
 	user1 := createRandomUser(t)
-	hashPassword, err := util.HashPassword(util.RandomString(6))
-	require.NoError(t, err)
 
-	arg := UpdateUserParams{
-		ID:                user1.ID,
-		Username:          "ngoc anh",
-		HashedPassword:    hashPassword,
-		PasswordChangedAt: time.Now(),
-		Fullname:          "Do Ngoc Anh",
-		Email:             util.RandomEmail(),
-		PhoneNumber:       util.RandomPhoneNumber(),
+	arg := UpdateUserInfoParams{
+		ID:          user1.ID,
+		Username:    sql.NullString{String: "ngoc anh", Valid: true},
+		Fullname:    sql.NullString{String: "Do Ngoc Anh", Valid: true},
+		Email:       sql.NullString{String: util.RandomEmail(), Valid: true},
+		PhoneNumber: sql.NullString{String: util.RandomPhoneNumber(), Valid: true},
 	}
 
-	user2, err := testQueries.UpdateUser(context.Background(), arg)
+	user2, err := testQueries.UpdateUserInfo(context.Background(), arg)
 	require.NoError(t, err)
 	require.NotEmpty(t, user2)
 
 	require.Equal(t, arg.Username, user2.Username)
-	require.Equal(t, arg.HashedPassword, user2.HashedPassword)
+	require.Equal(t, user1.HashedPassword, user2.HashedPassword)
 	require.Equal(t, arg.Fullname, user2.Fullname)
 	require.Equal(t, arg.Email, user2.Email)
 	require.Equal(t, arg.PhoneNumber, user2.PhoneNumber)
 
 	require.Equal(t, user1.ID, user2.ID)
 	require.Equal(t, user1.IsTeacher, user2.IsTeacher)
-	require.WithinDuration(t, arg.PasswordChangedAt, user2.PasswordChangedAt, time.Second)
+	require.WithinDuration(t, user1.PasswordChangedAt, user2.PasswordChangedAt, time.Second)
 	require.WithinDuration(t, user1.CreatedAt, user2.CreatedAt, time.Second)
 
 	testQueries.DeleteUser(context.Background(), user1.ID)
+}
+
+func TestUpdateUserName(t *testing.T) {
+	user1 := createRandomUser(t)
+	arg := UpdateUserInfoParams{
+		ID:       user1.ID,
+		Username: sql.NullString{String: "ngoc anh", Valid: true},
+	}
+
+	user2, err := testQueries.UpdateUserInfo(context.Background(), arg)
+	require.NoError(t, err)
+	require.NotEmpty(t, user2)
+
+	require.Equal(t, arg.Username, user2.Username)
+
+	require.Equal(t, user1.ID, user2.ID)
+	require.Equal(t, user1.HashedPassword, user2.HashedPassword)
+	require.Equal(t, user1.Fullname, user2.Fullname)
+	require.Equal(t, user1.Email, user2.Email)
+	require.Equal(t, user1.PhoneNumber, user2.PhoneNumber)
+	require.Equal(t, user1.IsTeacher, user2.IsTeacher)
+	require.WithinDuration(t, user1.PasswordChangedAt, user2.PasswordChangedAt, time.Second)
+	require.WithinDuration(t, user1.CreatedAt, user2.CreatedAt, time.Second)
+
+	testQueries.DeleteUser(context.Background(), user1.ID)
+}
+
+func TestUpdateUserPassword(t *testing.T) {
+	user1 := createRandomUser(t)
+	hashPassword, err := util.HashPassword(util.RandomString(6))
+	require.NoError(t, err)
+	require.NotEmpty(t, hashPassword)
+
+	arg := UpdateUserPasswordParams{
+		ID:                user1.ID,
+		HashedPassword:    hashPassword,
+		PasswordChangedAt: time.Now(),
+	}
+
+	user2, err := testQueries.UpdateUserPassword(context.Background(), arg)
+	require.NoError(t, err)
+	require.NotEmpty(t, user2)
+
+	require.Equal(t, user1.ID, user2.ID)
+	require.Equal(t, user1.Username, user2.Username)
+	require.Equal(t, user1.Fullname, user2.Fullname)
+	require.Equal(t, user1.Email, user2.Email)
+	require.Equal(t, user1.PhoneNumber, user2.PhoneNumber)
+	require.Equal(t, user1.IsTeacher, user2.IsTeacher)
+
+	require.Equal(t, arg.HashedPassword, user2.HashedPassword)
+	require.WithinDuration(t, arg.PasswordChangedAt, user2.PasswordChangedAt, time.Second)
+	require.WithinDuration(t, user1.CreatedAt, user2.CreatedAt, time.Second)
 }
