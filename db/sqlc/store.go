@@ -4,7 +4,6 @@ import (
 	"context"
 	"database/sql"
 	"fmt"
-	"time"
 )
 
 type Store struct {
@@ -37,32 +36,30 @@ func (store *Store) execTx(ctx context.Context, fn func(*Queries) error) error {
 	return tx.Commit()
 }
 
-type UpdateUserTxParams struct {
-	ID                int64     `json:"id"`
-	Username          string    `json:"username"`
-	HashedPassword    string    `json:"hashed_password"`
-	PasswordChangedAt time.Time `json:"password_changed_at"`
-	Fullname          string    `json:"fullname"`
-	Email             string    `json:"email"`
-	PhoneNumber       string    `json:"phone_number"`
+type UpdateUserInfoTxParams struct {
+	ID          int64          `json:"id"`
+	Username    sql.NullString `json:"username"`
+	Fullname    sql.NullString `json:"fullname"`
+	Email       sql.NullString `json:"email"`
+	PhoneNumber sql.NullString `json:"phone_number"`
 }
 
-type UpdateUserTxResult struct {
+type UpdateUserInfoTxResult struct {
 	User User `json:"user"`
 }
 
-func (store *Store) UpdateUserTx(ctx context.Context, arg UpdateUserTxParams) (UpdateUserTxResult, error) {
-	var result UpdateUserTxResult
+func (store *Store) UpdateUserInfoTx(ctx context.Context, arg UpdateUserInfoTxParams) (UpdateUserInfoTxResult, error) {
+	var result UpdateUserInfoTxResult
 
 	err := store.execTx(ctx, func(q *Queries) error {
 		var err error
 
 		result.User, err = q.UpdateUserInfo(ctx, UpdateUserInfoParams{
 			ID:          arg.ID,
-			Username:    sql.NullString{String: arg.Username, Valid: true},
-			Fullname:    sql.NullString{String: arg.Fullname, Valid: true},
-			Email:       sql.NullString{String: arg.Email, Valid: true},
-			PhoneNumber: sql.NullString{String: arg.PhoneNumber, Valid: true},
+			Username:    arg.Username,
+			Fullname:    arg.Fullname,
+			Email:       arg.Email,
+			PhoneNumber: arg.PhoneNumber,
 		})
 
 		if err != nil {

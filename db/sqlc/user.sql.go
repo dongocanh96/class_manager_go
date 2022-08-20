@@ -30,7 +30,7 @@ type CreateUserParams struct {
 	Fullname       sql.NullString `json:"fullname"`
 	Email          sql.NullString `json:"email"`
 	PhoneNumber    sql.NullString `json:"phone_number"`
-	IsTeacher      sql.NullBool   `json:"is_teacher"`
+	IsTeacher      bool           `json:"is_teacher"`
 }
 
 func (q *Queries) CreateUser(ctx context.Context, arg CreateUserParams) (User, error) {
@@ -98,9 +98,9 @@ OFFSET $3
 `
 
 type ListTeachersOrStudentsParams struct {
-	IsTeacher sql.NullBool `json:"is_teacher"`
-	Limit     int32        `json:"limit"`
-	Offset    int32        `json:"offset"`
+	IsTeacher bool  `json:"is_teacher"`
+	Limit     int32 `json:"limit"`
+	Offset    int32 `json:"offset"`
 }
 
 func (q *Queries) ListTeachersOrStudents(ctx context.Context, arg ListTeachersOrStudentsParams) ([]User, error) {
@@ -224,8 +224,8 @@ func (q *Queries) UpdateUserInfo(ctx context.Context, arg UpdateUserInfoParams) 
 
 const updateUserPassword = `-- name: UpdateUserPassword :one
 UPDATE users
-SET hashed_password = COALESCE($2, hashed_password),
-    password_changed_at = COALESCE($3, password_changed_at)
+SET hashed_password = $2,
+    password_changed_at = $3
 WHERE id = $1
 RETURNING id, username, hashed_password, fullname, email, phone_number, password_changed_at, created_at, is_teacher
 `

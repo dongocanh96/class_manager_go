@@ -51,5 +51,5 @@ type User struct {
 	PhoneNumber       sql.NullString `json:"phone_number"`
 	PasswordChangedAt time.Time      `json:"password_changed_at"`
 	CreatedAt         time.Time      `json:"created_at"`
-	IsTeacher         sql.NullBool   `json:"is_teacher"`
+	IsTeacher         bool           `json:"is_teacher"`
 }

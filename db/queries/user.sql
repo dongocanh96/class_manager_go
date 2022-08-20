@@ -38,8 +38,8 @@ RETURNING *;
 
 -- name: UpdateUserPassword :one
 UPDATE users
-SET hashed_password = COALESCE($2, hashed_password),
-    password_changed_at = COALESCE($3, password_changed_at)
+SET hashed_password = $2,
+    password_changed_at = $3
 WHERE id = $1
 RETURNING *;
 

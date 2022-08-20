@@ -2,8 +2,8 @@ package db
 
 import (
 	"context"
+	"database/sql"
 	"testing"
-	"time"
 
 	"github.com/dongocanh96/class_manager_go/util"
 	"github.com/stretchr/testify/require"
@@ -17,25 +17,21 @@ func TestUpdateUserTx(t *testing.T) {
 	n := 2
 
 	username := util.RandomString(10)
-	hashPassword, err := util.HashPassword(util.RandomString(6))
-	require.NoError(t, err)
 	fullname := util.RandomString(10)
 	email := util.RandomEmail()
 	phoneNumber := util.RandomPhoneNumber()
 
 	errs := make(chan error)
-	results := make(chan UpdateUserTxResult)
+	results := make(chan UpdateUserInfoTxResult)
 
 	for i := 0; i < n; i++ {
 		go func() {
-			result, err := store.UpdateUserTx(context.Background(), UpdateUserTxParams{
-				ID:                user1.ID,
-				Username:          username,
-				HashedPassword:    hashPassword,
-				PasswordChangedAt: time.Now(),
-				Fullname:          fullname,
-				Email:             email,
-				PhoneNumber:       phoneNumber,
+			result, err := store.UpdateUserInfoTx(context.Background(), UpdateUserInfoTxParams{
+				ID:          user1.ID,
+				Username:    sql.NullString{String: username, Valid: true},
+				Fullname:    sql.NullString{String: fullname, Valid: true},
+				Email:       sql.NullString{String: email, Valid: true},
+				PhoneNumber: sql.NullString{String: phoneNumber, Valid: true},
 			})
 			errs <- err
 			results <- result

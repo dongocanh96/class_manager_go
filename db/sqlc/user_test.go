@@ -20,7 +20,7 @@ func createRandomUser(t *testing.T) User {
 		Fullname:       sql.NullString{String: util.RandomString(6), Valid: true},
 		Email:          sql.NullString{String: util.RandomEmail(), Valid: true},
 		PhoneNumber:    sql.NullString{String: util.RandomPhoneNumber(), Valid: true},
-		IsTeacher:      sql.NullBool{Bool: util.RandomBoolean(), Valid: true},
+		IsTeacher:      util.RandomBoolean(),
 	}
 
 	user, err := testQueries.CreateUser(context.Background(), arg)
@@ -50,7 +50,7 @@ func createRandomTeacher(t *testing.T) User {
 		Fullname:       sql.NullString{String: util.RandomString(6), Valid: true},
 		Email:          sql.NullString{String: util.RandomEmail(), Valid: true},
 		PhoneNumber:    sql.NullString{String: util.RandomPhoneNumber(), Valid: true},
-		IsTeacher:      sql.NullBool{Bool: true, Valid: true},
+		IsTeacher:      true,
 	}
 
 	user, err := testQueries.CreateUser(context.Background(), arg)
@@ -80,7 +80,7 @@ func createRandomStudent(t *testing.T) User {
 		Fullname:       sql.NullString{String: util.RandomString(6), Valid: true},
 		Email:          sql.NullString{String: util.RandomEmail(), Valid: true},
 		PhoneNumber:    sql.NullString{String: util.RandomPhoneNumber(), Valid: true},
-		IsTeacher:      sql.NullBool{Bool: false, Valid: true},
+		IsTeacher:      false,
 	}
 
 	user, err := testQueries.CreateUser(context.Background(), arg)
@@ -163,7 +163,7 @@ func TestListTeacher(t *testing.T) {
 	}
 
 	arg := ListTeachersOrStudentsParams{
-		IsTeacher: sql.NullBool{Bool: true, Valid: true},
+		IsTeacher: true,
 		Limit:     10,
 		Offset:    0,
 	}
@@ -187,7 +187,7 @@ func TestListStudent(t *testing.T) {
 	}
 
 	arg := ListTeachersOrStudentsParams{
-		IsTeacher: sql.NullBool{Bool: false, Valid: true},
+		IsTeacher: false,
 		Limit:     10,
 		Offset:    0,
 	}
