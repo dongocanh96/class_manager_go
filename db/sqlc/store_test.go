@@ -1,0 +1,65 @@
+package db
+
+import (
+	"context"
+	"testing"
+	"time"
+
+	"github.com/dongocanh96/class_manager_go/util"
+	"github.com/stretchr/testify/require"
+)
+
+func TestUpdateUserTx(t *testing.T) {
+	store := NewStore(testDB)
+
+	user1 := createRandomUser(t)
+
+	n := 2
+
+	username := util.RandomString(10)
+	hashPassword, err := util.HashPassword(util.RandomString(6))
+	require.NoError(t, err)
+	fullname := util.RandomString(10)
+	email := util.RandomEmail()
+	phoneNumber := util.RandomPhoneNumber()
+
+	errs := make(chan error)
+	results := make(chan UpdateUserTxResult)
+
+	for i := 0; i < n; i++ {
+		go func() {
+			result, err := store.UpdateUserTx(context.Background(), UpdateUserTxParams{
+				ID:                user1.ID,
+				Username:          username,
+				HashedPassword:    hashPassword,
+				PasswordChangedAt: time.Now(),
+				Fullname:          fullname,
+				Email:             email,
+				PhoneNumber:       phoneNumber,
+			})
+			errs <- err
+			results <- result
+		}()
+	}
+
+	for i := 0; i < n; i++ {
+		err := <-errs
+		require.NoError(t, err)
+
+		result := <-results
+		require.NotEmpty(t, result)
+
+		user2 := result.User
+		user3, err := store.GetUser(context.Background(), user1.ID)
+		require.NoError(t, err)
+
+		require.NotEmpty(t, user2)
+		require.Equal(t, user3.ID, user2.ID)
+		require.Equal(t, user3.Username, user2.Username)
+		require.Equal(t, user3.HashedPassword, user2.HashedPassword)
+		require.Equal(t, user3.PasswordChangedAt, user2.PasswordChangedAt)
+		require.Equal(t, user3.Fullname, user2.Fullname)
+		require.Equal(t, user3.PhoneNumber, user2.PhoneNumber)
+	}
+
+}
