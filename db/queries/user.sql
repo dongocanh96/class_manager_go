@@ -14,6 +14,11 @@ INSERT INTO users (
 SELECT * FROM users
 WHERE id = $1 LIMIT 1;
 
+-- name: GetUserForUpdate :one
+SELECT * FROM users
+WHERE id = $1 LIMIT 1
+FOR UPDATE;
+
 -- name: ListUsers :many
 SELECT * FROM users
 ORDER BY id

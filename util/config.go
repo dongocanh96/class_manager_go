@@ -5,9 +5,10 @@ import (
 )
 
 type Config struct {
-	DBDriver      string `mapstructure:"DB_DRIVER"`
-	DBSource      string `mapstructure:"DB_SOURCE"`
-	ServerAddress string `mapstructure:"SERVER_ADDRESS"`
+	DBDriver            string `mapstructure:"DB_DRIVER"`
+	DBSource            string `mapstructure:"DB_SOURCE"`
+	ServerAddress       string `mapstructure:"SERVER_ADDRESS"`
+	SignUpKeyForTeacher string `mapstructure:"SIGN_UP_KEY_FOR_TEACHER"`
 }
 
 // LoadConfig reads configuration from file or environment variables
