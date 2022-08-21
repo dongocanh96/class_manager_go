@@ -14,7 +14,7 @@ func TestUpdateUserTx(t *testing.T) {
 
 	user1 := createRandomUser(t)
 
-	n := 2
+	n := 5
 
 	username := util.RandomString(10)
 	fullname := util.RandomString(10)

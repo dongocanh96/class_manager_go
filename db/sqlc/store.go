@@ -54,6 +54,8 @@ func (store *Store) UpdateUserInfoTx(ctx context.Context, arg UpdateUserInfoTxPa
 	err := store.execTx(ctx, func(q *Queries) error {
 		var err error
 
+		_, err = q.GetUserForUpdate(ctx, arg.ID)
+
 		result.User, err = q.UpdateUserInfo(ctx, UpdateUserInfoParams{
 			ID:          arg.ID,
 			Username:    arg.Username,
