@@ -22,4 +22,7 @@ sqlc:
 test:
 	go test -v -cover ./...
 
-.PHONY: setuppostgres createdb dropdb createmigration migrateup migratedown sqlc test
+server:
+	go run main.go
+
+.PHONY: setuppostgres createdb dropdb createmigration migrateup migratedown sqlc test server
