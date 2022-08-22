@@ -55,8 +55,10 @@ func RandomBoolean() bool {
 func RandomSubject() string {
 	n := len(Subjects)
 	subjects := make([]string, n)
+	id := 0
 	for _, value := range Subjects {
-		subjects = append(subjects, value)
+		subjects[id] = value
+		id++
 	}
 
 	return subjects[rand.Intn(n)]
