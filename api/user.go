@@ -178,11 +178,7 @@ func (server *Server) listTeacherOrStudent(ctx *gin.Context) {
 	ctx.JSON(http.StatusOK, rsps)
 }
 
-type updateUserInfoRequestURI struct {
-	ID int64 `uri:"id" binding:"required,min=1"`
-}
-
-type updateUserInfoRequestJSON struct {
+type updateUserInfoRequest struct {
 	Username    string `json:"username"`
 	Fullname    string `json:"fullname"`
 	Email       string `json:"email"`
@@ -190,8 +186,8 @@ type updateUserInfoRequestJSON struct {
 }
 
 func (server *Server) updateUserInfo(ctx *gin.Context) {
-	var reqJSON updateUserInfoRequestJSON
-	var reqURI updateUserInfoRequestURI
+	var reqJSON updateUserInfoRequest
+	var reqURI getUserRequest
 
 	if err := ctx.ShouldBindUri(&reqURI); err != nil {
 		ctx.JSON(http.StatusBadRequest, errorResponse(err))
@@ -247,18 +243,14 @@ func (server *Server) updateUserInfo(ctx *gin.Context) {
 	ctx.JSON(http.StatusOK, rsp)
 }
 
-type updateUserPasswordRequestURI struct {
-	ID int64 `uri:"id" binding:"required,min=1"`
-}
-
-type updateUserPasswordRequestJSON struct {
+type updateUserPasswordRequest struct {
 	OldPassword string `json:"old_password" binding:"required"`
 	NewPassword string `json:"new_password" binding:"required"`
 }
 
 func (server *Server) updateUserPassword(ctx *gin.Context) {
-	var reqJSON updateUserPasswordRequestJSON
-	var reqURI updateUserPasswordRequestURI
+	var reqJSON updateUserPasswordRequest
+	var reqURI getUserRequest
 
 	if err := ctx.ShouldBindUri(&reqURI); err != nil {
 		ctx.JSON(http.StatusBadRequest, errorResponse(err))
@@ -336,6 +328,93 @@ func (server *Server) deleteUser(ctx *gin.Context) {
 		return
 	}
 
-	server.store.DeleteUser(ctx, req.ID)
+	err = server.store.DeleteUser(ctx, req.ID)
+	if err != nil {
+		ctx.JSON(http.StatusInternalServerError, errorResponse(err))
+		return
+	}
 	ctx.JSON(http.StatusOK, nil)
+}
+
+type listMessageRequest struct {
+	PageID   int32 `form:"page_id" binding:"required,min=1"`
+	PageSize int32 `form:"page_size" binding:"required,min=5,max=20"`
+}
+
+func (server *Server) listSendedMessage(ctx *gin.Context) {
+	var reqURI getUserRequest
+	if err := ctx.ShouldBindUri(&reqURI); err != nil {
+		ctx.JSON(http.StatusBadRequest, errorResponse(err))
+		return
+	}
+
+	var reqForm listMessageRequest
+	if err := ctx.ShouldBindQuery(&reqForm); err != nil {
+		ctx.JSON(http.StatusBadRequest, errorResponse(err))
+		return
+	}
+
+	_, err := server.store.GetUser(ctx, reqURI.ID)
+	if err != nil {
+		if err == sql.ErrNoRows {
+			ctx.JSON(http.StatusNotFound, errorResponse(err))
+			return
+		}
+
+		ctx.JSON(http.StatusInternalServerError, errorResponse(err))
+		return
+	}
+
+	arg := db.ListMessagesFromUserParams{
+		FromUserID: reqURI.ID,
+		Limit:      reqForm.PageSize,
+		Offset:     (reqForm.PageID - 1) * reqForm.PageSize,
+	}
+
+	messages, err := server.store.ListMessagesFromUser(ctx, arg)
+	if err != nil {
+		ctx.JSON(http.StatusInternalServerError, errorResponse(err))
+		return
+	}
+
+	ctx.JSON(http.StatusOK, messages)
+}
+
+func (server *Server) listRecievedMessages(ctx *gin.Context) {
+	var reqURI getUserRequest
+	if err := ctx.ShouldBindUri(&reqURI); err != nil {
+		ctx.JSON(http.StatusBadRequest, errorResponse(err))
+		return
+	}
+
+	var reqForm listMessageRequest
+	if err := ctx.ShouldBindQuery(&reqForm); err != nil {
+		ctx.JSON(http.StatusBadRequest, errorResponse(err))
+		return
+	}
+
+	_, err := server.store.GetUser(ctx, reqURI.ID)
+	if err != nil {
+		if err == sql.ErrNoRows {
+			ctx.JSON(http.StatusNotFound, errorResponse(err))
+			return
+		}
+
+		ctx.JSON(http.StatusInternalServerError, errorResponse(err))
+		return
+	}
+
+	arg := db.ListMessagesToUserParams{
+		ToUserID: reqURI.ID,
+		Limit:    reqForm.PageSize,
+		Offset:   (reqForm.PageID - 1) * reqForm.PageSize,
+	}
+
+	messages, err := server.store.ListMessagesToUser(ctx, arg)
+	if err != nil {
+		ctx.JSON(http.StatusInternalServerError, errorResponse(err))
+		return
+	}
+
+	ctx.JSON(http.StatusOK, messages)
 }

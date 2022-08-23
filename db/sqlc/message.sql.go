@@ -74,7 +74,7 @@ func (q *Queries) GetMessage(ctx context.Context, id int64) (Message, error) {
 const listMessages = `-- name: ListMessages :many
 SELECT id, from_user_id, to_user_id, content, is_read, created_at, read_at FROM messages
 WHERE 
-    from_user_id = $1 OR
+    from_user_id = $1 AND
     to_user_id = $2
 ORDER BY id
 LIMIT $3
@@ -216,7 +216,8 @@ func (q *Queries) ListMessagesToUser(ctx context.Context, arg ListMessagesToUser
 
 const updateMessage = `-- name: UpdateMessage :one
 UPDATE messages
-SET content = $2
+SET content = $2,
+    is_read = $3
 WHERE id = $1
 RETURNING id, from_user_id, to_user_id, content, is_read, created_at, read_at
 `
@@ -224,10 +225,11 @@ RETURNING id, from_user_id, to_user_id, content, is_read, created_at, read_at
 type UpdateMessageParams struct {
 	ID      int64  `json:"id"`
 	Content string `json:"content"`
+	IsRead  bool   `json:"is_read"`
 }
 
 func (q *Queries) UpdateMessage(ctx context.Context, arg UpdateMessageParams) (Message, error) {
-	row := q.db.QueryRowContext(ctx, updateMessage, arg.ID, arg.Content)
+	row := q.db.QueryRowContext(ctx, updateMessage, arg.ID, arg.Content, arg.IsRead)
 	var i Message
 	err := row.Scan(
 		&i.ID,

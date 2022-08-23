@@ -14,7 +14,7 @@ WHERE id = $1 LIMIT 1;
 -- name: ListMessages :many
 SELECT * FROM messages
 WHERE 
-    from_user_id = $1 OR
+    from_user_id = $1 AND
     to_user_id = $2
 ORDER BY id
 LIMIT $3
@@ -36,7 +36,8 @@ OFFSET $3;
 
 -- name: UpdateMessage :one
 UPDATE messages
-SET content = $2
+SET content = $2,
+    is_read = $3
 WHERE id = $1
 RETURNING *;
 

@@ -181,6 +181,7 @@ func TestUpdateMessage(t *testing.T) {
 	arg := UpdateMessageParams{
 		ID:      message1.ID,
 		Content: util.RandomString(100),
+		IsRead:  false,
 	}
 
 	message2, err := testQueries.UpdateMessage(context.Background(), arg)
