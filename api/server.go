@@ -28,15 +28,27 @@ func NewServer(config util.Config, store db.Store) *Server {
 	router.PUT("/users/:id/update_info", server.updateUserInfo)
 	router.PUT("/users/:id/update_password", server.updateUserPassword)
 	router.DELETE("/users/:id", server.deleteUser)
-	router.GET("users/:id/sended_messages", server.listSendedMessage)
-	router.GET("users/:id/recieved_messages", server.listRecievedMessages)
+
+	//homework function
+	router.POST("/homeworks/create", server.createHomework)
+	router.GET("/homeworks/:id", server.getHomework)
+	router.GET("/homeworks", server.listHomework)
+	router.GET("/homeworks/teacher/:id", server.listHomeworkByTeacher)
+	router.GET("/homeworks/subject", server.listHomeworkBySubject)
+	router.PUT("/homeworks/:id/update", server.updateHomework)
+	router.PUT("/homeworks/:id/close", server.closeHomework)
+	router.DELETE("/homeworks/:id", server.deleteHomework)
+
+	//solution function
 
 	//message function
 	router.POST("/messages/create", server.createMessage)
 	router.GET("/messages/:id", server.getMessage)
 	router.PUT("/messages/:id/update", server.updateMessage)
-	router.PUT("/message/:id/change_state", server.updateMessageState)
-	router.GET("/messages/list_message", server.listMessages)
+	router.PUT("/messages/:id/change_state", server.updateMessageState)
+	router.GET("/messages/list_messages", server.listMessages)
+	router.GET("/messages/list_messages/sended_messages", server.listSendedMessage)
+	router.GET("/messages/list_messages/recieved_messages", server.listReceivedMessages)
 	router.DELETE("/messages/:id/delete", server.deleteMessage)
 
 	server.router = router
