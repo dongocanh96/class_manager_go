@@ -19,6 +19,7 @@ func NewServer(config util.Config, store db.Store) *Server {
 	}
 	router := gin.Default()
 
+	//user function
 	router.POST("/users/create", server.createUser)
 	router.GET("/users/:id", server.getUser)
 	router.GET("/users", server.listUser)
@@ -27,6 +28,16 @@ func NewServer(config util.Config, store db.Store) *Server {
 	router.PUT("/users/:id/update_info", server.updateUserInfo)
 	router.PUT("/users/:id/update_password", server.updateUserPassword)
 	router.DELETE("/users/:id", server.deleteUser)
+	router.GET("users/:id/sended_messages", server.listSendedMessage)
+	router.GET("users/:id/recieved_messages", server.listRecievedMessages)
+
+	//message function
+	router.POST("/messages/create", server.createMessage)
+	router.GET("/messages/:id", server.getMessage)
+	router.PUT("/messages/:id/update", server.updateMessage)
+	router.PUT("/message/:id/change_state", server.updateMessageState)
+	router.GET("/messages/list_message", server.listMessages)
+	router.DELETE("/messages/:id/delete", server.deleteMessage)
 
 	server.router = router
 	return server
