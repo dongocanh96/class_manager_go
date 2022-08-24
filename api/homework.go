@@ -88,6 +88,11 @@ func (server *Server) listHomework(ctx *gin.Context) {
 
 	homeworks, err := server.store.ListHomeworks(ctx, arg)
 	if err != nil {
+		if err == sql.ErrNoRows {
+			ctx.JSON(http.StatusNotFound, errorResponse(err))
+			return
+		}
+
 		ctx.JSON(http.StatusInternalServerError, errorResponse(err))
 		return
 	}
@@ -121,6 +126,11 @@ func (server *Server) listHomeworkByTeacher(ctx *gin.Context) {
 
 	homeworks, err := server.store.ListHomeworksByTeacher(ctx, arg)
 	if err != nil {
+		if err == sql.ErrNoRows {
+			ctx.JSON(http.StatusNotFound, errorResponse(err))
+			return
+		}
+
 		ctx.JSON(http.StatusInternalServerError, errorResponse(err))
 		return
 	}
@@ -204,6 +214,11 @@ func (server *Server) updateHomework(ctx *gin.Context) {
 
 	homework, err := server.store.UpdateHomework(ctx, arg)
 	if err != nil {
+		if err == sql.ErrNoRows {
+			ctx.JSON(http.StatusNotFound, errorResponse(err))
+			return
+		}
+
 		ctx.JSON(http.StatusInternalServerError, errorResponse(err))
 		return
 	}
@@ -238,6 +253,11 @@ func (server *Server) closeHomework(ctx *gin.Context) {
 
 	homework, err := server.store.CloseHomework(ctx, arg)
 	if err != nil {
+		if err == sql.ErrNoRows {
+			ctx.JSON(http.StatusNotFound, errorResponse(err))
+			return
+		}
+
 		ctx.JSON(http.StatusInternalServerError, errorResponse(err))
 		return
 	}
@@ -270,4 +290,44 @@ func (server *Server) deleteHomework(ctx *gin.Context) {
 	}
 
 	ctx.JSON(http.StatusOK, nil)
+}
+
+type listSolutionsByProblemRequest struct {
+	PageID   int32 `form:"page_id" binding:"required,min=1"`
+	PageSize int32 `form:"page_size" binding:"required,min=5,max=20"`
+}
+
+func (server *Server) listSolutionsByProblem(ctx *gin.Context) {
+	var reqForm listSolutionsByProblemRequest
+	if err := ctx.ShouldBindQuery(&reqForm); err != nil {
+		ctx.JSON(http.StatusBadRequest, errorResponse(err))
+		return
+	}
+
+	var reqURI getHomeworkRequest
+	if err := ctx.ShouldBindUri(&reqURI); err != nil {
+		ctx.JSON(http.StatusBadRequest, errorResponse(err))
+		return
+	}
+
+	arg := db.ListSolutionsByProblemParams{
+		ProblemID: reqURI.ID,
+		Limit:     reqForm.PageSize,
+		Offset:    (reqForm.PageID - 1) * reqForm.PageSize,
+	}
+
+	solutions, err := server.store.ListSolutionsByProblem(ctx, arg)
+	if err != nil {
+		if err == sql.ErrNoRows {
+			if err == sql.ErrNoRows {
+				ctx.JSON(http.StatusNotFound, errorResponse(err))
+				return
+			}
+
+			ctx.JSON(http.StatusInternalServerError, errorResponse(err))
+			return
+		}
+	}
+
+	ctx.JSON(http.StatusOK, solutions)
 }

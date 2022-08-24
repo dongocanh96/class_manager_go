@@ -119,84 +119,11 @@ func (server *Server) listMessages(ctx *gin.Context) {
 
 	messages, err := server.store.ListMessages(ctx, arg)
 	if err != nil {
-		ctx.JSON(http.StatusInternalServerError, errorResponse(err))
-		return
-	}
-
-	ctx.JSON(http.StatusOK, messages)
-}
-
-type listSendedMessageRequest struct {
-	FromUserID int64 `form:"from_user_id" binding:"required,min=1"`
-	PageID     int32 `form:"page_id" binding:"required,min=1"`
-	PageSize   int32 `form:"page_size" binding:"required,min=5,max=20"`
-}
-
-func (server *Server) listSendedMessage(ctx *gin.Context) {
-	var req listSendedMessageRequest
-	if err := ctx.ShouldBindQuery(&req); err != nil {
-		ctx.JSON(http.StatusBadRequest, errorResponse(err))
-		return
-	}
-
-	_, err := server.store.GetUser(ctx, req.FromUserID)
-	if err != nil {
 		if err == sql.ErrNoRows {
 			ctx.JSON(http.StatusNotFound, errorResponse(err))
 			return
 		}
 
-		ctx.JSON(http.StatusInternalServerError, errorResponse(err))
-		return
-	}
-
-	arg := db.ListMessagesFromUserParams{
-		FromUserID: req.FromUserID,
-		Limit:      req.PageSize,
-		Offset:     (req.PageID - 1) * req.PageSize,
-	}
-
-	messages, err := server.store.ListMessagesFromUser(ctx, arg)
-	if err != nil {
-		ctx.JSON(http.StatusInternalServerError, errorResponse(err))
-		return
-	}
-
-	ctx.JSON(http.StatusOK, messages)
-}
-
-type listReceivedMessageRequest struct {
-	ToUserID int64 `form:"to_user_id" binding:"required,min=1"`
-	PageID   int32 `form:"page_id" binding:"required,min=1"`
-	PageSize int32 `form:"page_size" binding:"required,min=5,max=20"`
-}
-
-func (server *Server) listReceivedMessages(ctx *gin.Context) {
-	var req listReceivedMessageRequest
-	if err := ctx.ShouldBindQuery(&req); err != nil {
-		ctx.JSON(http.StatusBadRequest, errorResponse(err))
-		return
-	}
-
-	_, err := server.store.GetUser(ctx, req.ToUserID)
-	if err != nil {
-		if err == sql.ErrNoRows {
-			ctx.JSON(http.StatusNotFound, errorResponse(err))
-			return
-		}
-
-		ctx.JSON(http.StatusInternalServerError, errorResponse(err))
-		return
-	}
-
-	arg := db.ListMessagesToUserParams{
-		ToUserID: req.ToUserID,
-		Limit:    req.PageSize,
-		Offset:   (req.PageID - 1) * req.PageSize,
-	}
-
-	messages, err := server.store.ListMessagesToUser(ctx, arg)
-	if err != nil {
 		ctx.JSON(http.StatusInternalServerError, errorResponse(err))
 		return
 	}

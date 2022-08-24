@@ -331,3 +331,119 @@ func (server *Server) deleteUser(ctx *gin.Context) {
 	}
 	ctx.JSON(http.StatusOK, nil)
 }
+
+type listSolutionsByUserRequest struct {
+	PageID   int32 `form:"page_id" binding:"required,min=1"`
+	PageSize int32 `form:"page_size" binding:"required,min=5,max=20"`
+}
+
+func (server *Server) listSolutionsByUser(ctx *gin.Context) {
+	var reqForm listSolutionsByUserRequest
+	if err := ctx.ShouldBindQuery(&reqForm); err != nil {
+		ctx.JSON(http.StatusBadRequest, errorResponse(err))
+		return
+	}
+
+	var reqURI getUserRequest
+	if err := ctx.ShouldBindUri(&reqURI); err != nil {
+		ctx.JSON(http.StatusBadRequest, errorResponse(err))
+		return
+	}
+
+	arg := db.ListSolutionsByUserParams{
+		UserID: reqURI.ID,
+		Limit:  reqForm.PageSize,
+		Offset: (reqForm.PageID - 1) * reqForm.PageSize,
+	}
+
+	solutions, err := server.store.ListSolutionsByUser(ctx, arg)
+	if err != nil {
+		if err == sql.ErrNoRows {
+			if err == sql.ErrNoRows {
+				ctx.JSON(http.StatusNotFound, errorResponse(err))
+				return
+			}
+
+			ctx.JSON(http.StatusInternalServerError, errorResponse(err))
+			return
+		}
+	}
+
+	ctx.JSON(http.StatusOK, solutions)
+}
+
+type listSendedMessageRequest struct {
+	PageID   int32 `form:"page_id" binding:"required,min=1"`
+	PageSize int32 `form:"page_size" binding:"required,min=5,max=20"`
+}
+
+func (server *Server) listSendedMessage(ctx *gin.Context) {
+	var reqForm listSendedMessageRequest
+	if err := ctx.ShouldBindQuery(&reqForm); err != nil {
+		ctx.JSON(http.StatusBadRequest, errorResponse(err))
+		return
+	}
+
+	var reqURI getUserRequest
+	if err := ctx.ShouldBindUri(&reqURI); err != nil {
+		ctx.JSON(http.StatusBadRequest, errorResponse(err))
+		return
+	}
+
+	arg := db.ListMessagesFromUserParams{
+		FromUserID: reqURI.ID,
+		Limit:      reqForm.PageSize,
+		Offset:     (reqForm.PageID - 1) * reqForm.PageSize,
+	}
+
+	messages, err := server.store.ListMessagesFromUser(ctx, arg)
+	if err != nil {
+		if err == sql.ErrNoRows {
+			ctx.JSON(http.StatusNotFound, errorResponse(err))
+			return
+		}
+
+		ctx.JSON(http.StatusInternalServerError, errorResponse(err))
+		return
+	}
+
+	ctx.JSON(http.StatusOK, messages)
+}
+
+type listReceivedMessageRequest struct {
+	PageID   int32 `form:"page_id" binding:"required,min=1"`
+	PageSize int32 `form:"page_size" binding:"required,min=5,max=20"`
+}
+
+func (server *Server) listReceivedMessages(ctx *gin.Context) {
+	var reqForm listReceivedMessageRequest
+	if err := ctx.ShouldBindQuery(&reqForm); err != nil {
+		ctx.JSON(http.StatusBadRequest, errorResponse(err))
+		return
+	}
+
+	var reqURI getUserRequest
+	if err := ctx.ShouldBindUri(&reqURI); err != nil {
+		ctx.JSON(http.StatusBadRequest, errorResponse(err))
+		return
+	}
+
+	arg := db.ListMessagesToUserParams{
+		ToUserID: reqURI.ID,
+		Limit:    reqForm.PageSize,
+		Offset:   (reqForm.PageID - 1) * reqForm.PageSize,
+	}
+
+	messages, err := server.store.ListMessagesToUser(ctx, arg)
+	if err != nil {
+		if err == sql.ErrNoRows {
+			ctx.JSON(http.StatusNotFound, errorResponse(err))
+			return
+		}
+
+		ctx.JSON(http.StatusInternalServerError, errorResponse(err))
+		return
+	}
+
+	ctx.JSON(http.StatusOK, messages)
+}
