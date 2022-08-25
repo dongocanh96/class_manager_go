@@ -124,6 +124,25 @@ func TestGetUser(t *testing.T) {
 	testQueries.DeleteUser(context.Background(), user1.ID)
 }
 
+func TestGetByUserName(t *testing.T) {
+	user1 := createRandomUser(t)
+	user2, err := testQueries.GetByUsername(context.Background(), user1.Username)
+	require.NoError(t, err)
+	require.NotEmpty(t, user2)
+
+	require.Equal(t, user1.ID, user2.ID)
+	require.Equal(t, user1.Username, user2.Username)
+	require.Equal(t, user1.HashedPassword, user2.HashedPassword)
+	require.Equal(t, user1.Fullname, user2.Fullname)
+	require.Equal(t, user1.Email, user2.Email)
+	require.Equal(t, user1.PhoneNumber, user2.PhoneNumber)
+	require.Equal(t, user1.IsTeacher, user2.IsTeacher)
+	require.WithinDuration(t, user1.PasswordChangedAt, user2.PasswordChangedAt, time.Second)
+	require.WithinDuration(t, user1.CreatedAt, user2.CreatedAt, time.Second)
+
+	testQueries.DeleteUser(context.Background(), user1.ID)
+}
+
 func TestDeleteUser(t *testing.T) {
 	user := createRandomUser(t)
 

@@ -1,26 +1,64 @@
 package api
 
 import (
+	"crypto/rsa"
+	"fmt"
+	"io/ioutil"
+
 	db "github.com/dongocanh96/class_manager_go/db/sqlc"
+	"github.com/dongocanh96/class_manager_go/token"
 	"github.com/dongocanh96/class_manager_go/util"
 	"github.com/gin-gonic/gin"
+	"github.com/golang-jwt/jwt/v4"
 )
 
 type Server struct {
-	config util.Config
-	store  db.Store
-	router *gin.Engine
+	config     util.Config
+	store      db.Store
+	tokenMaker token.Maker
+	router     *gin.Engine
 }
 
-func NewServer(config util.Config, store db.Store) *Server {
+func getKeyPairData(config util.Config) (privateKey *rsa.PrivateKey, publicKey *rsa.PublicKey) {
+	privateKeyByte, err := ioutil.ReadFile(config.PrivateKeyLocation)
+	if err != nil {
+		panic(err)
+	}
+
+	privatekey, err := jwt.ParseRSAPrivateKeyFromPEM(privateKeyByte)
+	if err != nil {
+		panic(err)
+	}
+
+	publicKeyByte, err := ioutil.ReadFile(config.PublicKeyLocation)
+	if err != nil {
+		panic(err)
+	}
+
+	publickey, err := jwt.ParseRSAPublicKeyFromPEM(publicKeyByte)
+	if err != nil {
+		panic(err)
+	}
+
+	return privatekey, publickey
+}
+
+func NewServer(config util.Config, store db.Store) (*Server, error) {
+	tokenMaker, err := token.NewJWTMaker(getKeyPairData(config))
+	if err != nil {
+		return nil, fmt.Errorf("cannot create token %w", err)
+	}
+
 	server := &Server{
-		store:  store,
-		config: config,
+		config:     config,
+		store:      store,
+		tokenMaker: tokenMaker,
 	}
 	router := gin.Default()
 
 	//user function
 	router.POST("/users/create", server.createUser)
+	router.POST("users/login", server.loginUser)
 	router.GET("/users/:id", server.getUser)
 	router.GET("/users", server.listUser)
 	router.GET("/users/teacher", server.listTeacherOrStudent)
@@ -60,7 +98,7 @@ func NewServer(config util.Config, store db.Store) *Server {
 	router.DELETE("/messages/:id/delete", server.deleteMessage)
 
 	server.router = router
-	return server
+	return server, nil
 }
 
 func (server *Server) Start(address string) error {

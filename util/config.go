@@ -1,14 +1,19 @@
 package util
 
 import (
+	"time"
+
 	"github.com/spf13/viper"
 )
 
 type Config struct {
-	DBDriver            string `mapstructure:"DB_DRIVER"`
-	DBSource            string `mapstructure:"DB_SOURCE"`
-	ServerAddress       string `mapstructure:"SERVER_ADDRESS"`
-	SignUpKeyForTeacher string `mapstructure:"SIGN_UP_KEY_FOR_TEACHER"`
+	DBDriver            string        `mapstructure:"DB_DRIVER"`
+	DBSource            string        `mapstructure:"DB_SOURCE"`
+	ServerAddress       string        `mapstructure:"SERVER_ADDRESS"`
+	SignUpKeyForTeacher string        `mapstructure:"SIGN_UP_KEY_FOR_TEACHER"`
+	PrivateKeyLocation  string        `mapstructure:"PRIVATE_KEY_LOCATION"`
+	PublicKeyLocation   string        `mapstructure:"PUBLIC_KEY_LOCATION"`
+	AccessTokenDuration time.Duration `mapstructure:"ACCESS_TOKEN_DURATION"`
 }
 
 // LoadConfig reads configuration from file or environment variables
