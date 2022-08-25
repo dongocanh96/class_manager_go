@@ -25,4 +25,7 @@ test:
 server:
 	go run main.go
 
-.PHONY: setuppostgres createdb dropdb createmigration migrateup migratedown sqlc test server
+mock:
+	mockgen --build_flags=--mod=mod -package mockdb -destination db/mock/store.go github.com/dongocanh96/class_manager_go/db/sqlc Store
+
+.PHONY: setuppostgres createdb dropdb createmigration migrateup migratedown sqlc test server mock

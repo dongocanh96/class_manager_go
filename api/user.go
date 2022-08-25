@@ -501,3 +501,46 @@ func (server *Server) listReceivedMessages(ctx *gin.Context) {
 
 	ctx.JSON(http.StatusOK, messages)
 }
+
+type listHomeworkByTeacherRequestURI struct {
+	TeacherID int64 `uri:"id" binding:"required,min=1"`
+}
+
+type listHomeworkByTeacherRequestForm struct {
+	PageID   int32 `form:"page_id" binding:"required,min=1"`
+	PageSize int32 `form:"page_size" binding:"required,min=5,max=20"`
+}
+
+func (server *Server) listHomeworkByTeacher(ctx *gin.Context) {
+	var reqURI listHomeworkByTeacherRequestURI
+	var reqForm listHomeworkByTeacherRequestForm
+
+	if err := ctx.ShouldBindUri(&reqURI); err != nil {
+		ctx.JSON(http.StatusBadGateway, errorResponse(err))
+		return
+	}
+
+	if err := ctx.ShouldBindQuery(&reqForm); err != nil {
+		ctx.JSON(http.StatusBadRequest, errorResponse(err))
+		return
+	}
+
+	arg := db.ListHomeworksByTeacherParams{
+		TeacherID: reqURI.TeacherID,
+		Limit:     reqForm.PageSize,
+		Offset:    (reqForm.PageID - 1) * reqForm.PageSize,
+	}
+
+	homeworks, err := server.store.ListHomeworksByTeacher(ctx, arg)
+	if err != nil {
+		if err == sql.ErrNoRows {
+			ctx.JSON(http.StatusNotFound, errorResponse(err))
+			return
+		}
+
+		ctx.JSON(http.StatusInternalServerError, errorResponse(err))
+		return
+	}
+
+	ctx.JSON(http.StatusOK, homeworks)
+}
