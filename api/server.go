@@ -9,6 +9,8 @@ import (
 	"github.com/dongocanh96/class_manager_go/token"
 	"github.com/dongocanh96/class_manager_go/util"
 	"github.com/gin-gonic/gin"
+	"github.com/gin-gonic/gin/binding"
+	"github.com/go-playground/validator/v10"
 	"github.com/golang-jwt/jwt/v4"
 )
 
@@ -56,6 +58,9 @@ func NewServer(config util.Config, store db.Store) (*Server, error) {
 	}
 	router := gin.Default()
 
+	if v, ok := binding.Validator.Engine().(*validator.Validate); ok {
+		v.RegisterValidation("subject", validSubject)
+	}
 	//user function
 	router.POST("/users/create", server.createUser)
 	router.POST("users/login", server.loginUser)
@@ -66,6 +71,7 @@ func NewServer(config util.Config, store db.Store) (*Server, error) {
 	router.PUT("/users/:id/update_info", server.updateUserInfo)
 	router.PUT("/users/:id/update_password", server.updateUserPassword)
 	router.DELETE("/users/:id", server.deleteUser)
+	router.GET("/users/:id/homeworks", server.listHomeworkByTeacher)
 	router.GET("/users/:id/solutions", server.listSolutionsByUser)
 	router.GET("/users/:id/sended_messages", server.listSendedMessage)
 	router.GET("/users/:id/recieved_messages", server.listReceivedMessages)
@@ -74,7 +80,6 @@ func NewServer(config util.Config, store db.Store) (*Server, error) {
 	router.POST("/homeworks/create", server.createHomework)
 	router.GET("/homeworks/:id", server.getHomework)
 	router.GET("/homeworks", server.listHomework)
-	router.GET("/homeworks/teacher/:id", server.listHomeworkByTeacher)
 	router.GET("/homeworks/subject", server.listHomeworkBySubject)
 	router.PUT("/homeworks/:id", server.updateHomework)
 	router.PUT("/homeworks/:id/close", server.closeHomework)

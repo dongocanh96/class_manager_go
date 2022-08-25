@@ -13,7 +13,7 @@ import (
 
 type createHomeworkRequest struct {
 	TeacherID int64  `json:"teacher_id" binding:"required,min=1"`
-	Subject   string `json:"subject" binding:"required,max=256"`
+	Subject   string `json:"subject" binding:"required,subject"`
 	Title     string `json:"title" binding:"required,max=256"`
 	FileName  string `json:"file_name" binding:"required"`
 	SavedPath string `json:"saved_path" binding:"required"`
@@ -87,44 +87,6 @@ func (server *Server) listHomework(ctx *gin.Context) {
 	}
 
 	homeworks, err := server.store.ListHomeworks(ctx, arg)
-	if err != nil {
-		if err == sql.ErrNoRows {
-			ctx.JSON(http.StatusNotFound, errorResponse(err))
-			return
-		}
-
-		ctx.JSON(http.StatusInternalServerError, errorResponse(err))
-		return
-	}
-
-	ctx.JSON(http.StatusOK, homeworks)
-}
-
-type listHomeworkByTeacherRequest struct {
-	TeacherID int64 `uri:"id" binding:"required,min=1"`
-}
-
-func (server *Server) listHomeworkByTeacher(ctx *gin.Context) {
-	var reqURI listHomeworkByTeacherRequest
-	var reqForm listHomeworkRequest
-
-	if err := ctx.ShouldBindUri(&reqURI); err != nil {
-		ctx.JSON(http.StatusBadGateway, errorResponse(err))
-		return
-	}
-
-	if err := ctx.ShouldBindQuery(&reqForm); err != nil {
-		ctx.JSON(http.StatusBadRequest, errorResponse(err))
-		return
-	}
-
-	arg := db.ListHomeworksByTeacherParams{
-		TeacherID: reqURI.TeacherID,
-		Limit:     reqForm.PageSize,
-		Offset:    (reqForm.PageID - 1) * reqForm.PageSize,
-	}
-
-	homeworks, err := server.store.ListHomeworksByTeacher(ctx, arg)
 	if err != nil {
 		if err == sql.ErrNoRows {
 			ctx.JSON(http.StatusNotFound, errorResponse(err))
