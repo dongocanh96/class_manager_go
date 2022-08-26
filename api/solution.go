@@ -9,36 +9,6 @@ import (
 	"github.com/gin-gonic/gin"
 )
 
-type createSolutionRequest struct {
-	ProblemID int64  `json:"problem_id" binding:"required,min=1"`
-	UserID    int64  `json:"user_id" binding:"required,min=1"`
-	FileName  string `json:"file_name" binding:"required"`
-	SavedPath string `json:"saved_path" binding:"required"`
-}
-
-func (server *Server) createSolution(ctx *gin.Context) {
-	var req createSolutionRequest
-	if err := ctx.ShouldBindJSON(&req); err != nil {
-		ctx.JSON(http.StatusBadRequest, errorResponse(err))
-		return
-	}
-
-	arg := db.CreateSolutionParams{
-		ProblemID: req.ProblemID,
-		UserID:    req.UserID,
-		FileName:  req.FileName,
-		SavedPath: req.SavedPath,
-	}
-
-	solution, err := server.store.CreateSolution(ctx, arg)
-	if err != nil {
-		ctx.JSON(http.StatusInternalServerError, errorResponse(err))
-		return
-	}
-
-	ctx.JSON(http.StatusOK, solution)
-}
-
 type getSolutionRequest struct {
 	ID int64 `uri:"id" binding:"required,min=1"`
 }
@@ -93,39 +63,6 @@ func (server *Server) getSolutionByProblemAndUser(ctx *gin.Context) {
 	}
 
 	ctx.JSON(http.StatusOK, solution)
-}
-
-type listSolutionsRequest struct {
-	PageID   int32 `form:"page_id" binding:"required,min=1"`
-	PageSize int32 `form:"page_size" binding:"required,min=5,max=20"`
-}
-
-func (server *Server) listSolutions(ctx *gin.Context) {
-	var req listHomeworkRequest
-	if err := ctx.ShouldBindQuery(&req); err != nil {
-		ctx.JSON(http.StatusBadRequest, errorResponse(err))
-		return
-	}
-
-	arg := db.ListSolutionsParams{
-		Limit:  req.PageSize,
-		Offset: (req.PageID - 1) * req.PageSize,
-	}
-
-	solutions, err := server.store.ListSolutions(ctx, arg)
-	if err != nil {
-		if err == sql.ErrNoRows {
-			if err == sql.ErrNoRows {
-				ctx.JSON(http.StatusNotFound, errorResponse(err))
-				return
-			}
-
-			ctx.JSON(http.StatusInternalServerError, errorResponse(err))
-			return
-		}
-	}
-
-	ctx.JSON(http.StatusOK, solutions)
 }
 
 type updateSolutionRequest struct {

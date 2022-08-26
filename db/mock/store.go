@@ -362,21 +362,6 @@ func (mr *MockStoreMockRecorder) ListMessagesToUser(arg0, arg1 interface{}) *gom
 	return mr.mock.ctrl.RecordCallWithMethodType(mr.mock, "ListMessagesToUser", reflect.TypeOf((*MockStore)(nil).ListMessagesToUser), arg0, arg1)
 }
 
-// ListSolutions mocks base method.
-func (m *MockStore) ListSolutions(arg0 context.Context, arg1 db.ListSolutionsParams) ([]db.Solution, error) {
-	m.ctrl.T.Helper()
-	ret := m.ctrl.Call(m, "ListSolutions", arg0, arg1)
-	ret0, _ := ret[0].([]db.Solution)
-	ret1, _ := ret[1].(error)
-	return ret0, ret1
-}
-
-// ListSolutions indicates an expected call of ListSolutions.
-func (mr *MockStoreMockRecorder) ListSolutions(arg0, arg1 interface{}) *gomock.Call {
-	mr.mock.ctrl.T.Helper()
-	return mr.mock.ctrl.RecordCallWithMethodType(mr.mock, "ListSolutions", reflect.TypeOf((*MockStore)(nil).ListSolutions), arg0, arg1)
-}
-
 // ListSolutionsByProblem mocks base method.
 func (m *MockStore) ListSolutionsByProblem(arg0 context.Context, arg1 db.ListSolutionsByProblemParams) ([]db.Solution, error) {
 	m.ctrl.T.Helper()
@@ -407,19 +392,19 @@ func (mr *MockStoreMockRecorder) ListSolutionsByUser(arg0, arg1 interface{}) *go
 	return mr.mock.ctrl.RecordCallWithMethodType(mr.mock, "ListSolutionsByUser", reflect.TypeOf((*MockStore)(nil).ListSolutionsByUser), arg0, arg1)
 }
 
-// ListTeachersOrStudents mocks base method.
-func (m *MockStore) ListTeachersOrStudents(arg0 context.Context, arg1 db.ListTeachersOrStudentsParams) ([]db.User, error) {
+// ListUserByRole mocks base method.
+func (m *MockStore) ListUserByRole(arg0 context.Context, arg1 db.ListUserByRoleParams) ([]db.User, error) {
 	m.ctrl.T.Helper()
-	ret := m.ctrl.Call(m, "ListTeachersOrStudents", arg0, arg1)
+	ret := m.ctrl.Call(m, "ListUserByRole", arg0, arg1)
 	ret0, _ := ret[0].([]db.User)
 	ret1, _ := ret[1].(error)
 	return ret0, ret1
 }
 
-// ListTeachersOrStudents indicates an expected call of ListTeachersOrStudents.
-func (mr *MockStoreMockRecorder) ListTeachersOrStudents(arg0, arg1 interface{}) *gomock.Call {
+// ListUserByRole indicates an expected call of ListUserByRole.
+func (mr *MockStoreMockRecorder) ListUserByRole(arg0, arg1 interface{}) *gomock.Call {
 	mr.mock.ctrl.T.Helper()
-	return mr.mock.ctrl.RecordCallWithMethodType(mr.mock, "ListTeachersOrStudents", reflect.TypeOf((*MockStore)(nil).ListTeachersOrStudents), arg0, arg1)
+	return mr.mock.ctrl.RecordCallWithMethodType(mr.mock, "ListUserByRole", reflect.TypeOf((*MockStore)(nil).ListUserByRole), arg0, arg1)
 }
 
 // ListUsers mocks base method.

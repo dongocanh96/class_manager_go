@@ -191,27 +191,27 @@ func (server *Server) listUser(ctx *gin.Context) {
 	ctx.JSON(http.StatusOK, rsps)
 }
 
-type listTeacherOrStudentRequest struct {
+type listUserByRoleRequest struct {
 	IsTeacher *bool `form:"is_teacher" binding:"required"`
 	PageID    int32 `form:"page_id" binding:"required,min=1"`
 	PageSize  int32 `form:"page_size" binding:"required,min=5,max=20"`
 }
 
-func (server *Server) listTeacherOrStudent(ctx *gin.Context) {
-	var req listTeacherOrStudentRequest
+func (server *Server) listUserByRole(ctx *gin.Context) {
+	var req listUserByRoleRequest
 
 	if err := ctx.ShouldBindQuery(&req); err != nil {
 		ctx.JSON(http.StatusBadRequest, errorResponse(err))
 		return
 	}
 
-	arg := db.ListTeachersOrStudentsParams{
+	arg := db.ListUserByRoleParams{
 		IsTeacher: *req.IsTeacher,
 		Limit:     req.PageSize,
 		Offset:    (req.PageID - 1) * req.PageSize,
 	}
 
-	users, err := server.store.ListTeachersOrStudents(ctx, arg)
+	users, err := server.store.ListUserByRole(ctx, arg)
 	if err != nil {
 		ctx.JSON(http.StatusInternalServerError, errorResponse(err))
 		return

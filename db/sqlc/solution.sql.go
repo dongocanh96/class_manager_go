@@ -105,49 +105,6 @@ func (q *Queries) GetSolutionByProblemAndUser(ctx context.Context, arg GetSoluti
 	return i, err
 }
 
-const listSolutions = `-- name: ListSolutions :many
-SELECT id, problem_id, user_id, file_name, saved_path, submited_at, updated_at FROM solutions
-ORDER BY id
-LIMIT $1
-OFFSET $2
-`
-
-type ListSolutionsParams struct {
-	Limit  int32 `json:"limit"`
-	Offset int32 `json:"offset"`
-}
-
-func (q *Queries) ListSolutions(ctx context.Context, arg ListSolutionsParams) ([]Solution, error) {
-	rows, err := q.db.QueryContext(ctx, listSolutions, arg.Limit, arg.Offset)
-	if err != nil {
-		return nil, err
-	}
-	defer rows.Close()
-	items := []Solution{}
-	for rows.Next() {
-		var i Solution
-		if err := rows.Scan(
-			&i.ID,
-			&i.ProblemID,
-			&i.UserID,
-			&i.FileName,
-			&i.SavedPath,
-			&i.SubmitedAt,
-			&i.UpdatedAt,
-		); err != nil {
-			return nil, err
-		}
-		items = append(items, i)
-	}
-	if err := rows.Close(); err != nil {
-		return nil, err
-	}
-	if err := rows.Err(); err != nil {
-		return nil, err
-	}
-	return items, nil
-}
-
 const listSolutionsByProblem = `-- name: ListSolutionsByProblem :many
 SELECT id, problem_id, user_id, file_name, saved_path, submited_at, updated_at FROM solutions
 WHERE problem_id = $1
