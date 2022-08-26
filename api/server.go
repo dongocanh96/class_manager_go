@@ -56,53 +56,13 @@ func NewServer(config util.Config, store db.Store) (*Server, error) {
 		store:      store,
 		tokenMaker: tokenMaker,
 	}
-	router := gin.Default()
 
 	if v, ok := binding.Validator.Engine().(*validator.Validate); ok {
 		v.RegisterValidation("subject", validSubject)
 	}
-	//user function
-	router.POST("/users/create", server.createUser)
-	router.POST("users/login", server.loginUser)
-	router.GET("/users/:id", server.getUser)
-	router.GET("/users", server.listUser)
-	router.GET("/users/teacher", server.listTeacherOrStudent)
-	router.GET("/users/student", server.listTeacherOrStudent)
-	router.PUT("/users/:id/update_info", server.updateUserInfo)
-	router.PUT("/users/:id/update_password", server.updateUserPassword)
-	router.DELETE("/users/:id", server.deleteUser)
-	router.GET("/users/:id/homeworks", server.listHomeworkByTeacher)
-	router.GET("/users/:id/solutions", server.listSolutionsByUser)
-	router.GET("/users/:id/sended_messages", server.listSendedMessage)
-	router.GET("/users/:id/recieved_messages", server.listReceivedMessages)
 
-	//homework function
-	router.POST("/homeworks/create", server.createHomework)
-	router.GET("/homeworks/:id", server.getHomework)
-	router.GET("/homeworks", server.listHomework)
-	router.GET("/homeworks/subject", server.listHomeworkBySubject)
-	router.PUT("/homeworks/:id", server.updateHomework)
-	router.PUT("/homeworks/:id/close", server.closeHomework)
-	router.DELETE("/homeworks/:id", server.deleteHomework)
-	router.GET("homeworks/:id/solutions", server.listSolutionsByProblem)
+	server.setupRouter()
 
-	//solution function
-	router.POST("/solutions/create", server.createSolution)
-	router.GET("/solutions/:id", server.getSolutionByID)
-	router.GET("/solutions/", server.listSolutions)
-	router.GET("/solutions/by_homework_and_user", server.getSolutionByProblemAndUser)
-	router.PUT("/solutions/:id", server.updateSolution)
-	router.DELETE("/solutions/:id", server.deleteSolution)
-
-	//message function
-	router.POST("/messages/create", server.createMessage)
-	router.GET("/messages/:id", server.getMessage)
-	router.PUT("/messages/:id/update", server.updateMessage)
-	router.PUT("/messages/:id/change_state", server.updateMessageState)
-	router.GET("/messages/list_messages", server.listMessages)
-	router.DELETE("/messages/:id/delete", server.deleteMessage)
-
-	server.router = router
 	return server, nil
 }
 
@@ -112,4 +72,52 @@ func (server *Server) Start(address string) error {
 
 func errorResponse(err error) gin.H {
 	return gin.H{"error": err.Error()}
+}
+
+func (server *Server) setupRouter() {
+	router := gin.Default()
+
+	//user function
+	router.POST("/users/create", server.createUser)
+	router.POST("users/login", server.loginUser)
+	router.GET("/users/:id", server.getUser)
+	router.GET("/users", server.listUser)
+	router.GET("/users/by_role", server.listUserByRole)
+
+	authRoutes := router.Group("/").Use(authMiddleware(server.tokenMaker))
+
+	authRoutes.PUT("/users/:id/update_info", server.updateUserInfo)
+	authRoutes.PUT("/users/:id/update_password", server.updateUserPassword)
+	authRoutes.DELETE("/users/:id", server.deleteUser)
+	authRoutes.GET("/users/:id/homeworks", server.listHomeworkByTeacher)
+	authRoutes.GET("/users/:id/solutions", server.listSolutionsByUser)
+	authRoutes.GET("/users/:id/sended_messages", server.listSendedMessage)
+	authRoutes.GET("/users/:id/recieved_messages", server.listReceivedMessages)
+
+	//homework function
+	authRoutes.POST("/homeworks/create", server.createHomework)
+	authRoutes.GET("/homeworks/:id", server.getHomework)
+	authRoutes.GET("/homeworks", server.listHomework)
+	authRoutes.GET("/homeworks/subject", server.listHomeworkBySubject)
+	authRoutes.PUT("/homeworks/:id", server.updateHomework)
+	authRoutes.PUT("/homeworks/:id/close", server.closeHomework)
+	authRoutes.DELETE("/homeworks/:id", server.deleteHomework)
+	authRoutes.POST("/homeworks/:id/solutions/create", server.createSolution)
+	authRoutes.GET("homeworks/:id/solutions", server.listSolutionsByProblem)
+
+	//solution function
+	authRoutes.GET("/solutions/:id", server.getSolutionByID)
+	authRoutes.GET("/solutions/by_homework_and_user", server.getSolutionByProblemAndUser)
+	authRoutes.PUT("/solutions/:id", server.updateSolution)
+	authRoutes.DELETE("/solutions/:id", server.deleteSolution)
+
+	//message function
+	authRoutes.POST("/messages/create", server.createMessage)
+	authRoutes.GET("/messages/:id", server.getMessage)
+	authRoutes.PUT("/messages/:id/update", server.updateMessage)
+	authRoutes.PUT("/messages/:id/change_state", server.updateMessageState)
+	authRoutes.GET("/messages/list_messages", server.listMessages)
+	authRoutes.DELETE("/messages/:id/delete", server.deleteMessage)
+
+	server.router = router
 }

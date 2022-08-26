@@ -33,12 +33,6 @@ ORDER BY id
 LIMIT $2
 OFFSET $3;
 
--- name: ListSolutions :many
-SELECT * FROM solutions
-ORDER BY id
-LIMIT $1
-OFFSET $2;
-
 -- name: UpdateSolution :one
 UPDATE solutions
 SET file_name = $2,

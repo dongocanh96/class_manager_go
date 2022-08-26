@@ -181,13 +181,13 @@ func TestListTeacher(t *testing.T) {
 		createRandomTeacher(t)
 	}
 
-	arg := ListTeachersOrStudentsParams{
+	arg := ListUserByRoleParams{
 		IsTeacher: true,
 		Limit:     10,
 		Offset:    0,
 	}
 
-	users, err := testQueries.ListTeachersOrStudents(context.Background(), arg)
+	users, err := testQueries.ListUserByRole(context.Background(), arg)
 	require.NoError(t, err)
 	require.NotEmpty(t, users)
 
@@ -205,13 +205,13 @@ func TestListStudent(t *testing.T) {
 		createRandomStudent(t)
 	}
 
-	arg := ListTeachersOrStudentsParams{
+	arg := ListUserByRoleParams{
 		IsTeacher: false,
 		Limit:     10,
 		Offset:    0,
 	}
 
-	users, err := testQueries.ListTeachersOrStudents(context.Background(), arg)
+	users, err := testQueries.ListUserByRole(context.Background(), arg)
 	require.NoError(t, err)
 	require.NotEmpty(t, users)
 

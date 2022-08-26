@@ -293,3 +293,38 @@ func (server *Server) listSolutionsByProblem(ctx *gin.Context) {
 
 	ctx.JSON(http.StatusOK, solutions)
 }
+
+type createSolutionRequest struct {
+	UserID    int64  `json:"user_id" binding:"required,min=1"`
+	FileName  string `json:"file_name" binding:"required"`
+	SavedPath string `json:"saved_path" binding:"required"`
+}
+
+func (server *Server) createSolution(ctx *gin.Context) {
+	var reqJSON createSolutionRequest
+	if err := ctx.ShouldBindJSON(&reqJSON); err != nil {
+		ctx.JSON(http.StatusBadRequest, errorResponse(err))
+		return
+	}
+
+	var reqURI getHomeworkRequest
+	if err := ctx.ShouldBindUri(&reqURI); err != nil {
+		ctx.JSON(http.StatusBadRequest, errorResponse(err))
+		return
+	}
+
+	arg := db.CreateSolutionParams{
+		ProblemID: reqURI.ID,
+		UserID:    reqJSON.UserID,
+		FileName:  reqJSON.FileName,
+		SavedPath: reqJSON.SavedPath,
+	}
+
+	solution, err := server.store.CreateSolution(ctx, arg)
+	if err != nil {
+		ctx.JSON(http.StatusInternalServerError, errorResponse(err))
+		return
+	}
+
+	ctx.JSON(http.StatusOK, solution)
+}

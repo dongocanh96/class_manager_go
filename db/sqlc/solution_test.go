@@ -189,38 +189,6 @@ func TestListSolutionsByProblem(t *testing.T) {
 	testQueries.DeleteUser(context.Background(), user.ID)
 }
 
-func TestListSolutions(t *testing.T) {
-	teacher := createRandomTeacher(t)
-	user := createRandomUser(t)
-	subject := util.RandomSubject()
-	homework := createRandomHomework(t, teacher.ID, subject)
-
-	for i := 0; i < 5; i++ {
-		createRandomSolution(t, user.ID, homework.ID)
-	}
-
-	arg := ListSolutionsParams{
-		Limit:  5,
-		Offset: 0,
-	}
-
-	solutions, err := testQueries.ListSolutions(context.Background(), arg)
-	require.NoError(t, err)
-	require.NotEmpty(t, solutions)
-
-	for _, solution := range solutions {
-		require.NotEmpty(t, solution)
-	}
-
-	for i := range solutions {
-		testQueries.DeleteSolution(context.Background(), solutions[i].ID)
-	}
-
-	testQueries.DeleteHomework(context.Background(), homework.ID)
-	testQueries.DeleteUser(context.Background(), teacher.ID)
-	testQueries.DeleteUser(context.Background(), user.ID)
-}
-
 func TestUpdateSolution(t *testing.T) {
 	teacher := createRandomTeacher(t)
 	user := createRandomUser(t)

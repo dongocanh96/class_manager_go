@@ -134,7 +134,7 @@ func (q *Queries) GetUserForUpdate(ctx context.Context, id int64) (User, error) 
 	return i, err
 }
 
-const listTeachersOrStudents = `-- name: ListTeachersOrStudents :many
+const listUserByRole = `-- name: ListUserByRole :many
 SELECT id, username, hashed_password, fullname, email, phone_number, password_changed_at, created_at, is_teacher FROM users
 WHERE is_teacher = $1
 ORDER BY id
@@ -142,14 +142,14 @@ LIMIT $2
 OFFSET $3
 `
 
-type ListTeachersOrStudentsParams struct {
+type ListUserByRoleParams struct {
 	IsTeacher bool  `json:"is_teacher"`
 	Limit     int32 `json:"limit"`
 	Offset    int32 `json:"offset"`
 }
 
-func (q *Queries) ListTeachersOrStudents(ctx context.Context, arg ListTeachersOrStudentsParams) ([]User, error) {
-	rows, err := q.db.QueryContext(ctx, listTeachersOrStudents, arg.IsTeacher, arg.Limit, arg.Offset)
+func (q *Queries) ListUserByRole(ctx context.Context, arg ListUserByRoleParams) ([]User, error) {
+	rows, err := q.db.QueryContext(ctx, listUserByRole, arg.IsTeacher, arg.Limit, arg.Offset)
 	if err != nil {
 		return nil, err
 	}

@@ -29,7 +29,7 @@ ORDER BY id
 LIMIT $1
 OFFSET $2;
 
--- name: ListTeachersOrStudents :many
+-- name: ListUserByRole :many
 SELECT * FROM users
 WHERE is_teacher = $1
 ORDER BY id
