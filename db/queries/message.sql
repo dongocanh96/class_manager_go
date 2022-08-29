@@ -16,6 +16,9 @@ SELECT * FROM messages
 WHERE 
     from_user_id = $1 AND
     to_user_id = $2
+    OR
+    from_user_id = $2 AND
+    to_user_id = $1
 ORDER BY id
 LIMIT $3
 OFFSET $4;

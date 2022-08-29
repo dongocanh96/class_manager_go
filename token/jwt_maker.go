@@ -13,7 +13,7 @@ type JWTMaker struct {
 	publicKey  *rsa.PublicKey
 }
 
-func NewJWTMaker(privateKey *rsa.PrivateKey, publicKey *rsa.PublicKey) (Maker, error) {
+func NewJWTMaker(privateKey *rsa.PrivateKey, publicKey *rsa.PublicKey) (*JWTMaker, error) {
 	return &JWTMaker{privateKey, publicKey}, nil
 }
 

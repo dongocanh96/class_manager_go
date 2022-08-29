@@ -7,13 +7,13 @@ import (
 	"time"
 
 	db "github.com/dongocanh96/class_manager_go/db/sqlc"
+	"github.com/dongocanh96/class_manager_go/token"
 	"github.com/gin-gonic/gin"
 )
 
 type createMessageRequest struct {
-	FromUserId int64  `json:"from_user_id" binding:"required"`
-	ToUserId   int64  `json:"to_user_id" binding:"required"`
-	Content    string `json:"content" binding:"required,max=5000"`
+	ToUserId int64  `json:"to_user_id" binding:"required"`
+	Content  string `json:"content" binding:"required,max=5000"`
 }
 
 func (server *Server) createMessage(ctx *gin.Context) {
@@ -23,7 +23,18 @@ func (server *Server) createMessage(ctx *gin.Context) {
 		return
 	}
 
-	if req.FromUserId == req.ToUserId {
+	authPayload := ctx.MustGet(authorizationPayloadKey).(*token.Payload)
+	if _, err := server.store.GetUser(ctx, authPayload.Userid); err != nil {
+		if err == sql.ErrNoRows {
+			ctx.JSON(http.StatusUnauthorized, errorResponse(err))
+			return
+		}
+
+		ctx.JSON(http.StatusInternalServerError, errorResponse(err))
+		return
+	}
+
+	if authPayload.Userid == req.ToUserId {
 		ctx.JSON(http.StatusBadRequest, errors.New("You can not send message to yourself!"))
 		return
 	}
@@ -40,7 +51,7 @@ func (server *Server) createMessage(ctx *gin.Context) {
 	}
 
 	arg := db.CreateMessageParams{
-		FromUserID: req.FromUserId,
+		FromUserID: authPayload.Userid,
 		ToUserID:   req.ToUserId,
 		Content:    req.Content,
 	}
@@ -64,6 +75,17 @@ func (server *Server) getMessage(ctx *gin.Context) {
 		return
 	}
 
+	authPayload := ctx.MustGet(authorizationPayloadKey).(*token.Payload)
+	if _, err := server.store.GetUser(ctx, authPayload.Userid); err != nil {
+		if err == sql.ErrNoRows {
+			ctx.JSON(http.StatusUnauthorized, errorResponse(err))
+			return
+		}
+
+		ctx.JSON(http.StatusInternalServerError, errorResponse(err))
+		return
+	}
+
 	message, err := server.store.GetMessage(ctx, req.ID)
 	if err != nil {
 		if err == sql.ErrNoRows {
@@ -75,25 +97,41 @@ func (server *Server) getMessage(ctx *gin.Context) {
 		return
 	}
 
+	if authPayload.Userid != message.FromUserID && authPayload.Userid != message.ToUserID {
+		err := errors.New("permission denied!")
+		ctx.JSON(http.StatusForbidden, errorResponse(err))
+		return
+	}
+
 	ctx.JSON(http.StatusOK, message)
 }
 
-type listMessagesRequestForm struct {
-	FromUserId int64 `form:"from_user_id" binding:"required,min=1"`
-	ToUserId   int64 `form:"to_user_id" binding:"required,min=1"`
-	PageID     int32 `form:"page_id" binding:"required,min=1"`
-	PageSize   int32 `form:"page_size" binding:"required,min=5,max=20"`
+type listMessagesRequest struct {
+	ToUserId int64 `form:"to_user_id" binding:"required,min=1"`
+	PageID   int32 `form:"page_id" binding:"required,min=1"`
+	PageSize int32 `form:"page_size" binding:"required,min=5,max=20"`
 }
 
 func (server *Server) listMessages(ctx *gin.Context) {
-	var req listMessagesRequestForm
+	var req listMessagesRequest
 	if err := ctx.ShouldBindQuery(&req); err != nil {
 		ctx.JSON(http.StatusBadRequest, errorResponse(err))
 		return
 	}
 
+	authPayload := ctx.MustGet(authorizationPayloadKey).(*token.Payload)
+	if _, err := server.store.GetUser(ctx, authPayload.Userid); err != nil {
+		if err == sql.ErrNoRows {
+			ctx.JSON(http.StatusUnauthorized, errorResponse(err))
+			return
+		}
+
+		ctx.JSON(http.StatusInternalServerError, errorResponse(err))
+		return
+	}
+
 	arg := db.ListMessagesParams{
-		FromUserID: req.FromUserId,
+		FromUserID: authPayload.Userid,
 		ToUserID:   req.ToUserId,
 		Limit:      req.PageSize,
 		Offset:     (req.PageID - 1) * req.PageSize,
@@ -130,7 +168,18 @@ func (server *Server) updateMessage(ctx *gin.Context) {
 		return
 	}
 
-	_, err := server.store.GetMessage(ctx, reqURI.ID)
+	authPayload := ctx.MustGet(authorizationPayloadKey).(*token.Payload)
+	if _, err := server.store.GetUser(ctx, authPayload.Userid); err != nil {
+		if err == sql.ErrNoRows {
+			ctx.JSON(http.StatusUnauthorized, errorResponse(err))
+			return
+		}
+
+		ctx.JSON(http.StatusInternalServerError, errorResponse(err))
+		return
+	}
+
+	message, err := server.store.GetMessage(ctx, reqURI.ID)
 	if err != nil {
 		if err == sql.ErrNoRows {
 			ctx.JSON(http.StatusNotFound, errorResponse(err))
@@ -147,7 +196,13 @@ func (server *Server) updateMessage(ctx *gin.Context) {
 		IsRead:  false,
 	}
 
-	message, err := server.store.UpdateMessage(ctx, arg)
+	if authPayload.Userid != message.FromUserID {
+		err := errors.New("permission denied!")
+		ctx.JSON(http.StatusForbidden, errorResponse(err))
+		return
+	}
+
+	message, err = server.store.UpdateMessage(ctx, arg)
 	if err != nil {
 		ctx.JSON(http.StatusInternalServerError, errorResponse(err))
 		return
@@ -163,7 +218,18 @@ func (server *Server) updateMessageState(ctx *gin.Context) {
 		return
 	}
 
-	_, err := server.store.GetMessage(ctx, req.ID)
+	authPayload := ctx.MustGet(authorizationPayloadKey).(*token.Payload)
+	if _, err := server.store.GetUser(ctx, authPayload.Userid); err != nil {
+		if err == sql.ErrNoRows {
+			ctx.JSON(http.StatusUnauthorized, errorResponse(err))
+			return
+		}
+
+		ctx.JSON(http.StatusInternalServerError, errorResponse(err))
+		return
+	}
+
+	message, err := server.store.GetMessage(ctx, req.ID)
 	if err != nil {
 		if err == sql.ErrNoRows {
 			ctx.JSON(http.StatusNotFound, errorResponse(err))
@@ -174,13 +240,19 @@ func (server *Server) updateMessageState(ctx *gin.Context) {
 		return
 	}
 
+	if authPayload.Userid != message.ToUserID {
+		err := errors.New("permission denied!")
+		ctx.JSON(http.StatusForbidden, errorResponse(err))
+		return
+	}
+
 	arg := db.UpdateMessageStateParams{
 		ID:     req.ID,
 		IsRead: true,
 		ReadAt: time.Now(),
 	}
 
-	message, err := server.store.UpdateMessageState(ctx, arg)
+	message, err = server.store.UpdateMessageState(ctx, arg)
 	if err != nil {
 		ctx.JSON(http.StatusInternalServerError, errorResponse(err))
 		return
@@ -196,7 +268,18 @@ func (server *Server) deleteMessage(ctx *gin.Context) {
 		return
 	}
 
-	_, err := server.store.GetMessage(ctx, req.ID)
+	authPayload := ctx.MustGet(authorizationPayloadKey).(*token.Payload)
+	if _, err := server.store.GetUser(ctx, authPayload.Userid); err != nil {
+		if err == sql.ErrNoRows {
+			ctx.JSON(http.StatusUnauthorized, errorResponse(err))
+			return
+		}
+
+		ctx.JSON(http.StatusInternalServerError, errorResponse(err))
+		return
+	}
+
+	message, err := server.store.GetMessage(ctx, req.ID)
 	if err != nil {
 		if err == sql.ErrNoRows {
 			ctx.JSON(http.StatusNotFound, errorResponse(err))
@@ -204,6 +287,12 @@ func (server *Server) deleteMessage(ctx *gin.Context) {
 		}
 
 		ctx.JSON(http.StatusInternalServerError, errorResponse(err))
+		return
+	}
+
+	if authPayload.Userid != message.FromUserID {
+		err := errors.New("permission denied!")
+		ctx.JSON(http.StatusForbidden, errorResponse(err))
 		return
 	}
 
