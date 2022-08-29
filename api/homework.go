@@ -7,6 +7,8 @@ import (
 	"time"
 
 	db "github.com/dongocanh96/class_manager_go/db/sqlc"
+
+	"github.com/dongocanh96/class_manager_go/token"
 	"github.com/dongocanh96/class_manager_go/util"
 	"github.com/gin-gonic/gin"
 )
@@ -26,8 +28,24 @@ func (server *Server) createHomework(ctx *gin.Context) {
 		return
 	}
 
+	authPayload := ctx.MustGet(authorizationPayloadKey).(*token.Payload)
+	if _, err := server.store.GetUser(ctx, authPayload.Userid); err != nil {
+		if err == sql.ErrNoRows {
+			ctx.JSON(http.StatusUnauthorized, errorResponse(err))
+			return
+		}
+
+		ctx.JSON(http.StatusInternalServerError, errorResponse(err))
+		return
+	}
+	if !authPayload.IsTeacher {
+		err := errors.New("user is not teacher!")
+		ctx.JSON(http.StatusForbidden, errorResponse(err))
+		return
+	}
+
 	arg := db.CreateHomeworkParams{
-		TeacherID: req.TeacherID,
+		TeacherID: authPayload.Userid,
 		Subject:   req.Subject,
 		Title:     req.Title,
 		FileName:  req.FileName,
@@ -51,6 +69,17 @@ func (server *Server) getHomework(ctx *gin.Context) {
 	var req getHomeworkRequest
 	if err := ctx.ShouldBindUri(&req); err != nil {
 		ctx.JSON(http.StatusBadRequest, errorResponse(err))
+		return
+	}
+
+	authPayload := ctx.MustGet(authorizationPayloadKey).(*token.Payload)
+	if _, err := server.store.GetUser(ctx, authPayload.Userid); err != nil {
+		if err == sql.ErrNoRows {
+			ctx.JSON(http.StatusUnauthorized, errorResponse(err))
+			return
+		}
+
+		ctx.JSON(http.StatusInternalServerError, errorResponse(err))
 		return
 	}
 
@@ -78,6 +107,17 @@ func (server *Server) listHomework(ctx *gin.Context) {
 
 	if err := ctx.ShouldBindQuery(&req); err != nil {
 		ctx.JSON(http.StatusBadRequest, errorResponse(err))
+		return
+	}
+
+	authPayload := ctx.MustGet(authorizationPayloadKey).(*token.Payload)
+	if _, err := server.store.GetUser(ctx, authPayload.Userid); err != nil {
+		if err == sql.ErrNoRows {
+			ctx.JSON(http.StatusUnauthorized, errorResponse(err))
+			return
+		}
+
+		ctx.JSON(http.StatusInternalServerError, errorResponse(err))
 		return
 	}
 
@@ -115,6 +155,17 @@ func (server *Server) listHomeworkBySubject(ctx *gin.Context) {
 
 	if !util.IsSupportedSubject(req.Subject) {
 		ctx.JSON(http.StatusBadRequest, errors.New("subject is not supported"))
+		return
+	}
+
+	authPayload := ctx.MustGet(authorizationPayloadKey).(*token.Payload)
+	if _, err := server.store.GetUser(ctx, authPayload.Userid); err != nil {
+		if err == sql.ErrNoRows {
+			ctx.JSON(http.StatusUnauthorized, errorResponse(err))
+			return
+		}
+
+		ctx.JSON(http.StatusInternalServerError, errorResponse(err))
 		return
 	}
 
@@ -156,7 +207,18 @@ func (server *Server) updateHomework(ctx *gin.Context) {
 		return
 	}
 
-	_, err := server.store.GetHomework(ctx, reqURI.ID)
+	authPayload := ctx.MustGet(authorizationPayloadKey).(*token.Payload)
+	if _, err := server.store.GetUser(ctx, authPayload.Userid); err != nil {
+		if err == sql.ErrNoRows {
+			ctx.JSON(http.StatusUnauthorized, errorResponse(err))
+			return
+		}
+
+		ctx.JSON(http.StatusInternalServerError, errorResponse(err))
+		return
+	}
+
+	homework, err := server.store.GetHomework(ctx, reqURI.ID)
 	if err != nil {
 		if err == sql.ErrNoRows {
 			ctx.JSON(http.StatusNotFound, errorResponse(err))
@@ -167,6 +229,12 @@ func (server *Server) updateHomework(ctx *gin.Context) {
 		return
 	}
 
+	if homework.TeacherID != authPayload.Userid {
+		err := errors.New("permission denied!")
+		ctx.JSON(http.StatusForbidden, errorResponse(err))
+		return
+	}
+
 	arg := db.UpdateHomeworkParams{
 		ID:        reqURI.ID,
 		FileName:  reqJSON.FileName,
@@ -174,7 +242,7 @@ func (server *Server) updateHomework(ctx *gin.Context) {
 		UpdatedAt: time.Now(),
 	}
 
-	homework, err := server.store.UpdateHomework(ctx, arg)
+	homework, err = server.store.UpdateHomework(ctx, arg)
 	if err != nil {
 		if err == sql.ErrNoRows {
 			ctx.JSON(http.StatusNotFound, errorResponse(err))
@@ -234,7 +302,18 @@ func (server *Server) deleteHomework(ctx *gin.Context) {
 		return
 	}
 
-	_, err := server.store.GetHomework(ctx, req.ID)
+	authPayload := ctx.MustGet(authorizationPayloadKey).(*token.Payload)
+	if _, err := server.store.GetUser(ctx, authPayload.Userid); err != nil {
+		if err == sql.ErrNoRows {
+			ctx.JSON(http.StatusUnauthorized, errorResponse(err))
+			return
+		}
+
+		ctx.JSON(http.StatusInternalServerError, errorResponse(err))
+		return
+	}
+
+	homework, err := server.store.GetHomework(ctx, req.ID)
 	if err != nil {
 		if err == sql.ErrNoRows {
 			ctx.JSON(http.StatusNotFound, errorResponse(err))
@@ -242,6 +321,12 @@ func (server *Server) deleteHomework(ctx *gin.Context) {
 		}
 
 		ctx.JSON(http.StatusInternalServerError, errorResponse(err))
+		return
+	}
+
+	if homework.TeacherID != authPayload.Userid {
+		err := errors.New("permission denied!")
+		ctx.JSON(http.StatusForbidden, errorResponse(err))
 		return
 	}
 
@@ -313,6 +398,17 @@ func (server *Server) createSolution(ctx *gin.Context) {
 		return
 	}
 
+	authPayload := ctx.MustGet(authorizationPayloadKey).(*token.Payload)
+	if _, err := server.store.GetUser(ctx, authPayload.Userid); err != nil {
+		if err == sql.ErrNoRows {
+			ctx.JSON(http.StatusUnauthorized, errorResponse(err))
+			return
+		}
+
+		ctx.JSON(http.StatusInternalServerError, errorResponse(err))
+		return
+	}
+
 	arg := db.CreateSolutionParams{
 		ProblemID: reqURI.ID,
 		UserID:    reqJSON.UserID,
@@ -324,6 +420,19 @@ func (server *Server) createSolution(ctx *gin.Context) {
 	if err != nil {
 		ctx.JSON(http.StatusInternalServerError, errorResponse(err))
 		return
+	}
+
+	if authPayload.IsTeacher {
+		argCloseHomework := db.CloseHomeworkParams{
+			ID:       reqURI.ID,
+			IsClosed: true,
+			ClosedAt: time.Now(),
+		}
+		_, err := server.store.CloseHomework(ctx, argCloseHomework)
+		if err != nil {
+			ctx.JSON(http.StatusInternalServerError, errorResponse(err))
+			return
+		}
 	}
 
 	ctx.JSON(http.StatusOK, solution)
