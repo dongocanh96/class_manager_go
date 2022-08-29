@@ -17,7 +17,7 @@ import (
 type Server struct {
 	config     util.Config
 	store      db.Store
-	tokenMaker token.Maker
+	tokenMaker token.JWTMaker
 	router     *gin.Engine
 }
 
@@ -54,7 +54,7 @@ func NewServer(config util.Config, store db.Store) (*Server, error) {
 	server := &Server{
 		config:     config,
 		store:      store,
-		tokenMaker: tokenMaker,
+		tokenMaker: *tokenMaker,
 	}
 
 	if v, ok := binding.Validator.Engine().(*validator.Validate); ok {
