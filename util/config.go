@@ -14,6 +14,7 @@ type Config struct {
 	PrivateKeyLocation  string        `mapstructure:"PRIVATE_KEY_LOCATION"`
 	PublicKeyLocation   string        `mapstructure:"PUBLIC_KEY_LOCATION"`
 	AccessTokenDuration time.Duration `mapstructure:"ACCESS_TOKEN_DURATION"`
+	Asset               string        `mapstructure:"ASSET"`
 }
 
 // LoadConfig reads configuration from file or environment variables

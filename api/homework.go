@@ -3,7 +3,10 @@ package api
 import (
 	"database/sql"
 	"errors"
+	"fmt"
+	"mime/multipart"
 	"net/http"
+	"os"
 	"time"
 
 	db "github.com/dongocanh96/class_manager_go/db/sqlc"
@@ -14,16 +17,14 @@ import (
 )
 
 type createHomeworkRequest struct {
-	TeacherID int64  `json:"teacher_id" binding:"required,min=1"`
-	Subject   string `json:"subject" binding:"required,subject"`
-	Title     string `json:"title" binding:"required,max=256"`
-	FileName  string `json:"file_name" binding:"required"`
-	SavedPath string `json:"saved_path" binding:"required"`
+	Subject string                `form:"subject" binding:"required,subject"`
+	Title   string                `form:"title" binding:"required,max=256"`
+	File    *multipart.FileHeader `form:"file" binding:"required"`
 }
 
 func (server *Server) createHomework(ctx *gin.Context) {
 	var req createHomeworkRequest
-	if err := ctx.ShouldBindJSON(&req); err != nil {
+	if err := ctx.ShouldBind(&req); err != nil {
 		ctx.JSON(http.StatusBadRequest, errorResponse(err))
 		return
 	}
@@ -44,12 +45,19 @@ func (server *Server) createHomework(ctx *gin.Context) {
 		return
 	}
 
+	savedPath := fmt.Sprintf("%s%s", server.config.Asset, req.File.Filename)
+	err := ctx.SaveUploadedFile(req.File, savedPath)
+	if err != nil {
+		ctx.JSON(http.StatusInternalServerError, errorResponse(err))
+		return
+	}
+
 	arg := db.CreateHomeworkParams{
 		TeacherID: authPayload.Userid,
 		Subject:   req.Subject,
 		Title:     req.Title,
-		FileName:  req.FileName,
-		SavedPath: req.SavedPath,
+		FileName:  req.File.Filename,
+		SavedPath: savedPath,
 	}
 
 	homework, err := server.store.CreateHomework(ctx, arg)
@@ -190,8 +198,7 @@ func (server *Server) listHomeworkBySubject(ctx *gin.Context) {
 }
 
 type updateHomeworkRequest struct {
-	FileName  string `json:"file_name" binding:"required"`
-	SavedPath string `json:"saved_path" binding:"required"`
+	File *multipart.FileHeader `form:"file" binding:"required"`
 }
 
 func (server *Server) updateHomework(ctx *gin.Context) {
@@ -201,8 +208,8 @@ func (server *Server) updateHomework(ctx *gin.Context) {
 		return
 	}
 
-	var reqJSON updateHomeworkRequest
-	if err := ctx.ShouldBindJSON(&reqJSON); err != nil {
+	var reqForm updateHomeworkRequest
+	if err := ctx.ShouldBind(&reqForm); err != nil {
 		ctx.JSON(http.StatusBadRequest, errorResponse(err))
 		return
 	}
@@ -229,16 +236,31 @@ func (server *Server) updateHomework(ctx *gin.Context) {
 		return
 	}
 
+	if homework.IsClosed {
+		err := errors.New("this homework is closed!")
+		ctx.JSON(http.StatusBadRequest, errorResponse(err))
+		return
+	}
+
 	if homework.TeacherID != authPayload.Userid {
 		err := errors.New("permission denied!")
 		ctx.JSON(http.StatusForbidden, errorResponse(err))
 		return
 	}
 
+	savedPath := fmt.Sprintf("%s%s", server.config.Asset, reqForm.File.Filename)
+	err = ctx.SaveUploadedFile(reqForm.File, savedPath)
+	if err != nil {
+		ctx.JSON(http.StatusInternalServerError, errorResponse(err))
+		return
+	}
+
+	oldSavedPath := homework.SavedPath
+
 	arg := db.UpdateHomeworkParams{
 		ID:        reqURI.ID,
-		FileName:  reqJSON.FileName,
-		SavedPath: reqJSON.SavedPath,
+		FileName:  reqForm.File.Filename,
+		SavedPath: savedPath,
 		UpdatedAt: time.Now(),
 	}
 
@@ -249,6 +271,12 @@ func (server *Server) updateHomework(ctx *gin.Context) {
 			return
 		}
 
+		ctx.JSON(http.StatusInternalServerError, errorResponse(err))
+		return
+	}
+
+	err = os.Remove(oldSavedPath)
+	if err != nil {
 		ctx.JSON(http.StatusInternalServerError, errorResponse(err))
 		return
 	}
@@ -264,7 +292,18 @@ func (server *Server) closeHomework(ctx *gin.Context) {
 		return
 	}
 
-	_, err := server.store.GetHomework(ctx, req.ID)
+	authPayload := ctx.MustGet(authorizationPayloadKey).(*token.Payload)
+	if _, err := server.store.GetUser(ctx, authPayload.Userid); err != nil {
+		if err == sql.ErrNoRows {
+			ctx.JSON(http.StatusUnauthorized, errorResponse(err))
+			return
+		}
+
+		ctx.JSON(http.StatusInternalServerError, errorResponse(err))
+		return
+	}
+
+	homework, err := server.store.GetHomework(ctx, req.ID)
 	if err != nil {
 		if err == sql.ErrNoRows {
 			ctx.JSON(http.StatusNotFound, errorResponse(err))
@@ -275,13 +314,19 @@ func (server *Server) closeHomework(ctx *gin.Context) {
 		return
 	}
 
+	if authPayload.Userid != homework.TeacherID {
+		err := errors.New("permission denied!")
+		ctx.JSON(http.StatusForbidden, errorResponse(err))
+		return
+	}
+
 	arg := db.CloseHomeworkParams{
 		ID:       req.ID,
 		IsClosed: true,
 		ClosedAt: time.Now(),
 	}
 
-	homework, err := server.store.CloseHomework(ctx, arg)
+	homework, err = server.store.CloseHomework(ctx, arg)
 	if err != nil {
 		if err == sql.ErrNoRows {
 			ctx.JSON(http.StatusNotFound, errorResponse(err))
@@ -330,6 +375,12 @@ func (server *Server) deleteHomework(ctx *gin.Context) {
 		return
 	}
 
+	err = os.Remove(homework.SavedPath)
+	if err != nil {
+		ctx.JSON(http.StatusInternalServerError, errorResponse(err))
+		return
+	}
+
 	err = server.store.DeleteHomework(ctx, req.ID)
 	if err != nil {
 		ctx.JSON(http.StatusInternalServerError, errorResponse(err))
@@ -337,46 +388,6 @@ func (server *Server) deleteHomework(ctx *gin.Context) {
 	}
 
 	ctx.JSON(http.StatusOK, nil)
-}
-
-type listSolutionsByProblemRequest struct {
-	PageID   int32 `form:"page_id" binding:"required,min=1"`
-	PageSize int32 `form:"page_size" binding:"required,min=5,max=20"`
-}
-
-func (server *Server) listSolutionsByProblem(ctx *gin.Context) {
-	var reqForm listSolutionsByProblemRequest
-	if err := ctx.ShouldBindQuery(&reqForm); err != nil {
-		ctx.JSON(http.StatusBadRequest, errorResponse(err))
-		return
-	}
-
-	var reqURI getHomeworkRequest
-	if err := ctx.ShouldBindUri(&reqURI); err != nil {
-		ctx.JSON(http.StatusBadRequest, errorResponse(err))
-		return
-	}
-
-	arg := db.ListSolutionsByProblemParams{
-		ProblemID: reqURI.ID,
-		Limit:     reqForm.PageSize,
-		Offset:    (reqForm.PageID - 1) * reqForm.PageSize,
-	}
-
-	solutions, err := server.store.ListSolutionsByProblem(ctx, arg)
-	if err != nil {
-		if err == sql.ErrNoRows {
-			if err == sql.ErrNoRows {
-				ctx.JSON(http.StatusNotFound, errorResponse(err))
-				return
-			}
-
-			ctx.JSON(http.StatusInternalServerError, errorResponse(err))
-			return
-		}
-	}
-
-	ctx.JSON(http.StatusOK, solutions)
 }
 
 type createSolutionRequest struct {
@@ -436,4 +447,61 @@ func (server *Server) createSolution(ctx *gin.Context) {
 	}
 
 	ctx.JSON(http.StatusOK, solution)
+}
+
+type listSolutionsByProblemRequest struct {
+	PageID   int32 `form:"page_id" binding:"required,min=1"`
+	PageSize int32 `form:"page_size" binding:"required,min=5,max=20"`
+}
+
+func (server *Server) listSolutionsByProblem(ctx *gin.Context) {
+	var reqForm listSolutionsByProblemRequest
+	if err := ctx.ShouldBindQuery(&reqForm); err != nil {
+		ctx.JSON(http.StatusBadRequest, errorResponse(err))
+		return
+	}
+
+	var reqURI getHomeworkRequest
+	if err := ctx.ShouldBindUri(&reqURI); err != nil {
+		ctx.JSON(http.StatusBadRequest, errorResponse(err))
+		return
+	}
+
+	authPayload := ctx.MustGet(authorizationPayloadKey).(*token.Payload)
+	if _, err := server.store.GetUser(ctx, authPayload.Userid); err != nil {
+		if err == sql.ErrNoRows {
+			ctx.JSON(http.StatusUnauthorized, errorResponse(err))
+			return
+		}
+
+		ctx.JSON(http.StatusInternalServerError, errorResponse(err))
+		return
+	}
+
+	if !authPayload.IsTeacher {
+		err := errors.New("permission denied!")
+		ctx.JSON(http.StatusBadRequest, errorResponse(err))
+		return
+	}
+
+	arg := db.ListSolutionsByProblemParams{
+		ProblemID: reqURI.ID,
+		Limit:     reqForm.PageSize,
+		Offset:    (reqForm.PageID - 1) * reqForm.PageSize,
+	}
+
+	solutions, err := server.store.ListSolutionsByProblem(ctx, arg)
+	if err != nil {
+		if err == sql.ErrNoRows {
+			if err == sql.ErrNoRows {
+				ctx.JSON(http.StatusNotFound, errorResponse(err))
+				return
+			}
+
+			ctx.JSON(http.StatusInternalServerError, errorResponse(err))
+			return
+		}
+	}
+
+	ctx.JSON(http.StatusOK, solutions)
 }
