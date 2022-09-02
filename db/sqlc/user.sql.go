@@ -134,53 +134,6 @@ func (q *Queries) GetUserForUpdate(ctx context.Context, id int64) (User, error) 
 	return i, err
 }
 
-const listUserByRole = `-- name: ListUserByRole :many
-SELECT id, username, hashed_password, fullname, email, phone_number, password_changed_at, created_at, is_teacher FROM users
-WHERE is_teacher = $1
-ORDER BY id
-LIMIT $2
-OFFSET $3
-`
-
-type ListUserByRoleParams struct {
-	IsTeacher bool  `json:"is_teacher"`
-	Limit     int32 `json:"limit"`
-	Offset    int32 `json:"offset"`
-}
-
-func (q *Queries) ListUserByRole(ctx context.Context, arg ListUserByRoleParams) ([]User, error) {
-	rows, err := q.db.QueryContext(ctx, listUserByRole, arg.IsTeacher, arg.Limit, arg.Offset)
-	if err != nil {
-		return nil, err
-	}
-	defer rows.Close()
-	items := []User{}
-	for rows.Next() {
-		var i User
-		if err := rows.Scan(
-			&i.ID,
-			&i.Username,
-			&i.HashedPassword,
-			&i.Fullname,
-			&i.Email,
-			&i.PhoneNumber,
-			&i.PasswordChangedAt,
-			&i.CreatedAt,
-			&i.IsTeacher,
-		); err != nil {
-			return nil, err
-		}
-		items = append(items, i)
-	}
-	if err := rows.Close(); err != nil {
-		return nil, err
-	}
-	if err := rows.Err(); err != nil {
-		return nil, err
-	}
-	return items, nil
-}
-
 const listUsers = `-- name: ListUsers :many
 SELECT id, username, hashed_password, fullname, email, phone_number, password_changed_at, created_at, is_teacher FROM users
 ORDER BY id

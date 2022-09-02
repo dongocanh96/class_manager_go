@@ -18,6 +18,8 @@ type userResponse struct {
 	Username          string    `json:"username"`
 	Fullname          string    `json:"fullname"`
 	Email             string    `json:"email"`
+	PhoneNumber       string    `json:"phone_number"`
+	IsTeacher         bool      `json:"is_teacher"`
 	PasswordChangedAt time.Time `json:"password_changed_at"`
 	CreatedAt         time.Time `json:"created_at"`
 }
@@ -28,6 +30,8 @@ func newUserResponse(user db.User) userResponse {
 		Username:          user.Username.String,
 		Fullname:          user.Fullname.String,
 		Email:             user.Email.String,
+		PhoneNumber:       user.PhoneNumber.String,
+		IsTeacher:         user.IsTeacher,
 		PasswordChangedAt: user.PasswordChangedAt,
 		CreatedAt:         user.CreatedAt,
 	}
@@ -177,43 +181,6 @@ func (server *Server) listUser(ctx *gin.Context) {
 	}
 
 	users, err := server.store.ListUsers(ctx, arg)
-	if err != nil {
-		ctx.JSON(http.StatusInternalServerError, errorResponse(err))
-		return
-	}
-
-	length := len(users)
-	rsps := make([]userResponse, length)
-	iter := 0
-	for _, user := range users {
-		rsps[iter] = newUserResponse(user)
-		iter++
-	}
-
-	ctx.JSON(http.StatusOK, rsps)
-}
-
-type listUserByRoleRequest struct {
-	IsTeacher *bool `form:"is_teacher" binding:"required"`
-	PageID    int32 `form:"page_id" binding:"required,min=1"`
-	PageSize  int32 `form:"page_size" binding:"required,min=5,max=20"`
-}
-
-func (server *Server) listUserByRole(ctx *gin.Context) {
-	var req listUserByRoleRequest
-
-	if err := ctx.ShouldBindQuery(&req); err != nil {
-		ctx.JSON(http.StatusBadRequest, errorResponse(err))
-		return
-	}
-
-	arg := db.ListUserByRoleParams{
-		IsTeacher: *req.IsTeacher,
-		Limit:     req.PageSize,
-		Offset:    (req.PageID - 1) * req.PageSize,
-	}
-
-	users, err := server.store.ListUserByRole(ctx, arg)
 	if err != nil {
 		ctx.JSON(http.StatusInternalServerError, errorResponse(err))
 		return
@@ -472,6 +439,12 @@ func (server *Server) listHomeworkByTeacher(ctx *gin.Context) {
 		return
 	}
 
+	authPayload := ctx.MustGet(authorizationPayloadKey).(*token.Payload)
+	if _, err := server.store.GetUser(ctx, authPayload.Userid); err != nil {
+		ctx.JSON(http.StatusForbidden, errorResponse(err))
+		return
+	}
+
 	user, err := server.store.GetUser(ctx, reqURI.TeacherID)
 	if err != nil {
 		if err == sql.ErrNoRows {
@@ -486,12 +459,6 @@ func (server *Server) listHomeworkByTeacher(ctx *gin.Context) {
 	if !user.IsTeacher {
 		err := errors.New("this is not a teacher!")
 		ctx.JSON(http.StatusBadRequest, errorResponse(err))
-		return
-	}
-
-	authPayload := ctx.MustGet(authorizationPayloadKey).(*token.Payload)
-	if _, err := server.store.GetUser(ctx, authPayload.Userid); err != nil {
-		ctx.JSON(http.StatusForbidden, errorResponse(err))
 		return
 	}
 

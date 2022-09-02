@@ -176,54 +176,6 @@ func TestListUser(t *testing.T) {
 	}
 }
 
-func TestListTeacher(t *testing.T) {
-	for i := 0; i < 10; i++ {
-		createRandomTeacher(t)
-	}
-
-	arg := ListUserByRoleParams{
-		IsTeacher: true,
-		Limit:     10,
-		Offset:    0,
-	}
-
-	users, err := testQueries.ListUserByRole(context.Background(), arg)
-	require.NoError(t, err)
-	require.NotEmpty(t, users)
-
-	for _, user := range users {
-		require.NotEmpty(t, user)
-	}
-
-	for i := range users {
-		testQueries.DeleteUser(context.Background(), users[i].ID)
-	}
-}
-
-func TestListStudent(t *testing.T) {
-	for i := 0; i < 10; i++ {
-		createRandomStudent(t)
-	}
-
-	arg := ListUserByRoleParams{
-		IsTeacher: false,
-		Limit:     10,
-		Offset:    0,
-	}
-
-	users, err := testQueries.ListUserByRole(context.Background(), arg)
-	require.NoError(t, err)
-	require.NotEmpty(t, users)
-
-	for _, user := range users {
-		require.NotEmpty(t, user)
-	}
-
-	for i := range users {
-		testQueries.DeleteUser(context.Background(), users[i].ID)
-	}
-}
-
 func TestUpdateUserInfo(t *testing.T) {
 	user1 := createRandomUser(t)
 

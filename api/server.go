@@ -82,7 +82,6 @@ func (server *Server) setupRouter() {
 	router.POST("users/login", server.loginUser)
 	router.GET("/users/:id", server.getUser)
 	router.GET("/users", server.listUser)
-	router.GET("/users/by_role", server.listUserByRole)
 
 	authRoutes := router.Group("/").Use(authMiddleware(server.tokenMaker))
 
@@ -115,7 +114,6 @@ func (server *Server) setupRouter() {
 	authRoutes.POST("/messages/create", server.createMessage)
 	authRoutes.GET("/messages/:id", server.getMessage)
 	authRoutes.PUT("/messages/:id/update", server.updateMessage)
-	authRoutes.PUT("/messages/:id/change_state", server.updateMessageState)
 	authRoutes.GET("/messages/list_messages", server.listMessages)
 	authRoutes.DELETE("/messages/:id/delete", server.deleteMessage)
 

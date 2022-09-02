@@ -34,7 +34,6 @@ type Querier interface {
 	ListMessagesToUser(ctx context.Context, arg ListMessagesToUserParams) ([]Message, error)
 	ListSolutionsByProblem(ctx context.Context, arg ListSolutionsByProblemParams) ([]Solution, error)
 	ListSolutionsByUser(ctx context.Context, arg ListSolutionsByUserParams) ([]Solution, error)
-	ListUserByRole(ctx context.Context, arg ListUserByRoleParams) ([]User, error)
 	ListUsers(ctx context.Context, arg ListUsersParams) ([]User, error)
 	UpdateHomework(ctx context.Context, arg UpdateHomeworkParams) (Homework, error)
 	UpdateMessage(ctx context.Context, arg UpdateMessageParams) (Message, error)
