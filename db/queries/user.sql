@@ -29,13 +29,6 @@ ORDER BY id
 LIMIT $1
 OFFSET $2;
 
--- name: ListUserByRole :many
-SELECT * FROM users
-WHERE is_teacher = $1
-ORDER BY id
-LIMIT $2
-OFFSET $3;
-
 -- name: UpdateUserInfo :one
 UPDATE users
 SET username = COALESCE($2, username),
