@@ -3,7 +3,10 @@ package api
 import (
 	"database/sql"
 	"errors"
+	"fmt"
+	"mime/multipart"
 	"net/http"
+	"os"
 	"time"
 
 	db "github.com/dongocanh96/class_manager_go/db/sqlc"
@@ -23,15 +26,6 @@ func (server *Server) getSolutionByID(ctx *gin.Context) {
 	}
 
 	authPayload := ctx.MustGet(authorizationPayloadKey).(*token.Payload)
-	if _, err := server.store.GetUser(ctx, authPayload.Userid); err != nil {
-		if err == sql.ErrNoRows {
-			ctx.JSON(http.StatusUnauthorized, errorResponse(err))
-			return
-		}
-
-		ctx.JSON(http.StatusInternalServerError, errorResponse(err))
-		return
-	}
 
 	solution, err := server.store.GetSolutionByID(ctx, req.ID)
 	if err != nil {
@@ -53,57 +47,8 @@ func (server *Server) getSolutionByID(ctx *gin.Context) {
 	ctx.JSON(http.StatusOK, solution)
 }
 
-type getSolutionsByProblemAndUser struct {
-	ProblemID int64 `form:"problem_id" binding:"required,min=1"`
-	UserID    int64 `form:"user_id" binding:"required,min=1"`
-}
-
-func (server *Server) getSolutionByProblemAndUser(ctx *gin.Context) {
-	var req getSolutionsByProblemAndUser
-	if err := ctx.ShouldBindQuery(&req); err != nil {
-		ctx.JSON(http.StatusBadRequest, errorResponse(err))
-		return
-	}
-
-	authPayload := ctx.MustGet(authorizationPayloadKey).(*token.Payload)
-	if _, err := server.store.GetUser(ctx, authPayload.Userid); err != nil {
-		if err == sql.ErrNoRows {
-			ctx.JSON(http.StatusUnauthorized, errorResponse(err))
-			return
-		}
-
-		ctx.JSON(http.StatusInternalServerError, errorResponse(err))
-		return
-	}
-
-	if !authPayload.IsTeacher && authPayload.Userid != req.UserID {
-		err := errors.New("permission denied!")
-		ctx.JSON(http.StatusForbidden, errorResponse(err))
-		return
-	}
-
-	arg := db.GetSolutionByProblemAndUserParams{
-		ProblemID: req.ProblemID,
-		UserID:    req.UserID,
-	}
-
-	solution, err := server.store.GetSolutionByProblemAndUser(ctx, arg)
-	if err != nil {
-		if err == sql.ErrNoRows {
-			ctx.JSON(http.StatusNotFound, errorResponse(err))
-			return
-		}
-
-		ctx.JSON(http.StatusInternalServerError, errorResponse(err))
-		return
-	}
-
-	ctx.JSON(http.StatusOK, solution)
-}
-
 type updateSolutionRequest struct {
-	FileName  string `json:"file_name" binding:"required"`
-	SavedPath string `json:"saved_path" binding:"required"`
+	File *multipart.FileHeader `form:"file" binding:"required"`
 }
 
 func (server *Server) updateSolution(ctx *gin.Context) {
@@ -113,22 +58,13 @@ func (server *Server) updateSolution(ctx *gin.Context) {
 		return
 	}
 
-	var reqJSON updateSolutionRequest
-	if err := ctx.ShouldBindJSON(&reqJSON); err != nil {
+	var req updateSolutionRequest
+	if err := ctx.ShouldBind(&req); err != nil {
 		ctx.JSON(http.StatusBadRequest, errorResponse(err))
 		return
 	}
 
 	authPayload := ctx.MustGet(authorizationPayloadKey).(*token.Payload)
-	if _, err := server.store.GetUser(ctx, authPayload.Userid); err != nil {
-		if err == sql.ErrNoRows {
-			ctx.JSON(http.StatusUnauthorized, errorResponse(err))
-			return
-		}
-
-		ctx.JSON(http.StatusInternalServerError, errorResponse(err))
-		return
-	}
 
 	solution, err := server.store.GetSolutionByID(ctx, reqURI.ID)
 	if err != nil {
@@ -143,18 +79,33 @@ func (server *Server) updateSolution(ctx *gin.Context) {
 
 	if authPayload.Userid != solution.UserID {
 		err := errors.New("permission denied!")
-		ctx.JSON(http.StatusForbidden, errorResponse(err))
+		ctx.JSON(http.StatusUnauthorized, errorResponse(err))
 		return
 	}
 
+	savedPath := fmt.Sprintf("%s%s", server.config.Asset, req.File.Filename)
+	err = ctx.SaveUploadedFile(req.File, savedPath)
+	if err != nil {
+		ctx.JSON(http.StatusInternalServerError, errorResponse(err))
+		return
+	}
+
+	oldSavedPath := solution.SavedPath
+
 	arg := db.UpdateSolutionParams{
 		ID:        reqURI.ID,
-		FileName:  reqJSON.FileName,
-		SavedPath: reqJSON.SavedPath,
+		FileName:  req.File.Filename,
+		SavedPath: savedPath,
 		UpdatedAt: time.Now(),
 	}
 
 	solution, err = server.store.UpdateSolution(ctx, arg)
+	if err != nil {
+		ctx.JSON(http.StatusInternalServerError, errorResponse(err))
+		return
+	}
+
+	err = os.Remove(oldSavedPath)
 	if err != nil {
 		ctx.JSON(http.StatusInternalServerError, errorResponse(err))
 		return
@@ -171,15 +122,6 @@ func (server *Server) deleteSolution(ctx *gin.Context) {
 	}
 
 	authPayload := ctx.MustGet(authorizationPayloadKey).(*token.Payload)
-	if _, err := server.store.GetUser(ctx, authPayload.Userid); err != nil {
-		if err == sql.ErrNoRows {
-			ctx.JSON(http.StatusUnauthorized, errorResponse(err))
-			return
-		}
-
-		ctx.JSON(http.StatusInternalServerError, errorResponse(err))
-		return
-	}
 
 	solution, err := server.store.GetSolutionByID(ctx, req.ID)
 	if err != nil {
@@ -194,7 +136,13 @@ func (server *Server) deleteSolution(ctx *gin.Context) {
 
 	if authPayload.Userid != solution.UserID {
 		err := errors.New("permission denied!")
-		ctx.JSON(http.StatusForbidden, errorResponse(err))
+		ctx.JSON(http.StatusUnauthorized, errorResponse(err))
+		return
+	}
+
+	err = os.Remove(solution.SavedPath)
+	if err != nil {
+		ctx.JSON(http.StatusInternalServerError, errorResponse(err))
 		return
 	}
 

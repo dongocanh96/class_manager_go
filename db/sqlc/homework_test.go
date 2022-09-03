@@ -67,8 +67,8 @@ func TestGetHomework(t *testing.T) {
 	require.WithinDuration(t, homework1.UpdatedAt, homework2.UpdatedAt, time.Second)
 	require.WithinDuration(t, homework1.ClosedAt, homework2.ClosedAt, time.Second)
 
-	testQueries.DeleteUser(context.Background(), teacher.ID)
 	testQueries.DeleteHomework(context.Background(), homework2.ID)
+	testQueries.DeleteUser(context.Background(), teacher.ID)
 }
 
 func TestDeleteHomework(t *testing.T) {
@@ -225,4 +225,7 @@ func TestCloseHomework(t *testing.T) {
 
 	require.True(t, homework2.IsClosed)
 	require.WithinDuration(t, arg.ClosedAt, homework2.ClosedAt, time.Second)
+
+	testQueries.DeleteHomework(context.Background(), homework2.ID)
+	testQueries.DeleteUser(context.Background(), teacher.ID)
 }
