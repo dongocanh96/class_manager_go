@@ -7,6 +7,8 @@ package db
 import (
 	"database/sql"
 	"time"
+
+	"github.com/google/uuid"
 )
 
 type Homework struct {
@@ -30,6 +32,17 @@ type Message struct {
 	IsRead     bool      `json:"is_read"`
 	CreatedAt  time.Time `json:"created_at"`
 	ReadAt     time.Time `json:"read_at"`
+}
+
+type Session struct {
+	ID           uuid.UUID `json:"id"`
+	Username     string    `json:"username"`
+	RefreshToken string    `json:"refresh_token"`
+	UserAgent    string    `json:"user_agent"`
+	ClientIp     string    `json:"client_ip"`
+	IsBlocked    bool      `json:"is_blocked"`
+	ExpiresAt    time.Time `json:"expires_at"`
+	CreateAt     time.Time `json:"create_at"`
 }
 
 type Solution struct {
