@@ -103,10 +103,10 @@ func (server *Server) setupRouter() {
 	authRoutes.DELETE("/homeworks/:id", server.deleteHomework)
 	authRoutes.POST("/homeworks/:id/solutions/create", server.createSolution)
 	authRoutes.GET("homeworks/:id/solutions", server.listSolutionsByProblem)
+	authRoutes.GET("homeworks/:id/solutions/user", server.getSolutionByProblemAndUser)
 
 	//solution function
 	authRoutes.GET("/solutions/:id", server.getSolutionByID)
-	authRoutes.GET("/solutions/by_homework_and_user", server.getSolutionByProblemAndUser)
 	authRoutes.PUT("/solutions/:id", server.updateSolution)
 	authRoutes.DELETE("/solutions/:id", server.deleteSolution)
 
