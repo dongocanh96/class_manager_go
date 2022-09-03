@@ -10,6 +10,8 @@ import (
 	"github.com/dongocanh96/class_manager_go/token"
 	"github.com/dongocanh96/class_manager_go/util"
 	"github.com/gin-gonic/gin"
+	"github.com/google/uuid"
+	"github.com/lib/pq"
 	"golang.org/x/crypto/bcrypt"
 )
 
@@ -38,8 +40,8 @@ func newUserResponse(user db.User) userResponse {
 }
 
 type createUserRequest struct {
-	Username    string `json:"username" binding:"required"`
-	Password    string `json:"password" binding:"required"`
+	Username    string `json:"username" binding:"required,alphanum"`
+	Password    string `json:"password" binding:"required,min=6"`
 	Fullname    string `json:"fullname" binding:"required"`
 	Email       string `json:"email" binding:"required"`
 	PhoneNumber string `json:"phone_number" binding:"required"`
@@ -75,6 +77,13 @@ func (server *Server) createUser(ctx *gin.Context) {
 
 	user, err := server.store.CreateUser(ctx, arg)
 	if err != nil {
+		if pqErr, ok := err.(*pq.Error); ok {
+			switch pqErr.Code.Name() {
+			case "unique_violation":
+				ctx.JSON(http.StatusForbidden, errorResponse(err))
+				return
+			}
+		}
 		ctx.JSON(http.StatusInternalServerError, errorResponse(err))
 		return
 	}
@@ -89,8 +98,12 @@ type loginUserRequest struct {
 }
 
 type loginUserResponse struct {
-	AccessToken string       `json:"access_token"`
-	User        userResponse `json:"user"`
+	SessionID             uuid.UUID    `json:"session_id"`
+	AccessToken           string       `json:"access_token"`
+	AccessTokenExpiredAt  time.Time    `json:"access_token_expired_at"`
+	RefreshToken          string       `json:"refresh_token"`
+	RefreshTokenExpiredAt time.Time    `json:"refresh_token_expired_at"`
+	User                  userResponse `json:"user"`
 }
 
 func (server *Server) loginUser(ctx *gin.Context) {
@@ -100,9 +113,9 @@ func (server *Server) loginUser(ctx *gin.Context) {
 		return
 	}
 
-	userName := sql.NullString{String: req.Username, Valid: true}
+	username := sql.NullString{String: req.Username, Valid: true}
 
-	user, err := server.store.GetByUsername(ctx, userName)
+	user, err := server.store.GetByUsername(ctx, username)
 	if err != nil {
 		if err == sql.ErrNoRows {
 			ctx.JSON(http.StatusNotFound, errorResponse(err))
@@ -119,7 +132,7 @@ func (server *Server) loginUser(ctx *gin.Context) {
 		return
 	}
 
-	accessToken, err := server.tokenMaker.CreateToken(
+	accessToken, accessPayload, err := server.tokenMaker.CreateToken(
 		user.ID,
 		user.Username.String,
 		user.IsTeacher,
@@ -130,9 +143,39 @@ func (server *Server) loginUser(ctx *gin.Context) {
 		return
 	}
 
+	refreshToken, refreshPayload, err := server.tokenMaker.CreateToken(
+		user.ID,
+		user.Username.String,
+		user.IsTeacher,
+		server.config.RefreshTokenDuration,
+	)
+
+	if err != nil {
+		ctx.JSON(http.StatusInternalServerError, errorResponse(err))
+		return
+	}
+
+	session, err := server.store.CreateSession(ctx, db.CreateSessionParams{
+		ID:           refreshPayload.ID,
+		Username:     user.Username.String,
+		RefreshToken: refreshToken,
+		UserAgent:    ctx.Request.UserAgent(),
+		ClientIp:     ctx.ClientIP(),
+		IsBlocked:    false,
+		ExpiresAt:    refreshPayload.ExpiredAt,
+	})
+	if err != nil {
+		ctx.JSON(http.StatusInternalServerError, errorResponse(err))
+		return
+	}
+
 	rsp := loginUserResponse{
-		AccessToken: accessToken,
-		User:        newUserResponse(user),
+		SessionID:             session.ID,
+		AccessToken:           accessToken,
+		AccessTokenExpiredAt:  accessPayload.ExpiredAt,
+		RefreshToken:          refreshToken,
+		RefreshTokenExpiredAt: refreshPayload.ExpiredAt,
+		User:                  newUserResponse(user),
 	}
 	ctx.JSON(http.StatusOK, rsp)
 }
@@ -393,14 +436,14 @@ func (server *Server) deleteUser(ctx *gin.Context) {
 	authPayload := ctx.MustGet(authorizationPayloadKey).(*token.Payload)
 
 	if authPayload.Userid != user.ID {
-		// student can not update another student's infos
+		// student can not delete another account
 		if !authPayload.IsTeacher {
 			err := errors.New("permission denied!")
 			ctx.JSON(http.StatusForbidden, errorResponse(err))
 			return
 		}
 
-		// teacher can not update another teacher's infos
+		// teacher can not delete another teacher's account
 		if user.IsTeacher {
 			err := errors.New("permission denied!")
 			ctx.JSON(http.StatusForbidden, errorResponse(err))

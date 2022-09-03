@@ -17,14 +17,15 @@ func NewJWTMaker(privateKey *rsa.PrivateKey, publicKey *rsa.PublicKey) (*JWTMake
 	return &JWTMaker{privateKey, publicKey}, nil
 }
 
-func (maker *JWTMaker) CreateToken(userid int64, username string, isteacher bool, duration time.Duration) (string, error) {
+func (maker *JWTMaker) CreateToken(userid int64, username string, isteacher bool, duration time.Duration) (string, *Payload, error) {
 	payload, err := NewPayload(userid, username, isteacher, duration)
 	if err != nil {
-		return "", err
+		return "", payload, err
 	}
 
 	jwtToken := jwt.NewWithClaims(jwt.SigningMethodRS256, payload)
-	return jwtToken.SignedString(maker.privateKey)
+	token, err := jwtToken.SignedString(maker.privateKey)
+	return token, payload, err
 }
 
 func (maker *JWTMaker) VerifyToken(token string) (*Payload, error) {

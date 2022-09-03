@@ -7,14 +7,15 @@ import (
 )
 
 type Config struct {
-	DBDriver            string        `mapstructure:"DB_DRIVER"`
-	DBSource            string        `mapstructure:"DB_SOURCE"`
-	ServerAddress       string        `mapstructure:"SERVER_ADDRESS"`
-	SignUpKeyForTeacher string        `mapstructure:"SIGN_UP_KEY_FOR_TEACHER"`
-	PrivateKeyLocation  string        `mapstructure:"PRIVATE_KEY_LOCATION"`
-	PublicKeyLocation   string        `mapstructure:"PUBLIC_KEY_LOCATION"`
-	AccessTokenDuration time.Duration `mapstructure:"ACCESS_TOKEN_DURATION"`
-	Asset               string        `mapstructure:"ASSET"`
+	DBDriver             string        `mapstructure:"DB_DRIVER"`
+	DBSource             string        `mapstructure:"DB_SOURCE"`
+	ServerAddress        string        `mapstructure:"SERVER_ADDRESS"`
+	AccessTokenDuration  time.Duration `mapstructure:"ACCESS_TOKEN_DURATION"`
+	RefreshTokenDuration time.Duration `mapstructure:"REFRESH_TOKEN_DURATION"`
+	SignUpKeyForTeacher  string        `mapstructure:"SIGN_UP_KEY_FOR_TEACHER"`
+	PrivateKeyLocation   string        `mapstructure:"PRIVATE_KEY_LOCATION"`
+	PublicKeyLocation    string        `mapstructure:"PUBLIC_KEY_LOCATION"`
+	Asset                string        `mapstructure:"ASSET"`
 }
 
 // LoadConfig reads configuration from file or environment variables

@@ -13,6 +13,7 @@ type Querier interface {
 	CloseHomework(ctx context.Context, arg CloseHomeworkParams) (Homework, error)
 	CreateHomework(ctx context.Context, arg CreateHomeworkParams) (Homework, error)
 	CreateMessage(ctx context.Context, arg CreateMessageParams) (Message, error)
+	CreateSession(ctx context.Context, arg CreateSessionParams) (Session, error)
 	CreateSolution(ctx context.Context, arg CreateSolutionParams) (Solution, error)
 	CreateUser(ctx context.Context, arg CreateUserParams) (User, error)
 	DeleteHomework(ctx context.Context, id int64) error
@@ -22,6 +23,7 @@ type Querier interface {
 	GetByUsername(ctx context.Context, username sql.NullString) (User, error)
 	GetHomework(ctx context.Context, id int64) (Homework, error)
 	GetMessage(ctx context.Context, id int64) (Message, error)
+	GetSession(ctx context.Context, username string) (Session, error)
 	GetSolutionByID(ctx context.Context, id int64) (Solution, error)
 	GetSolutionByProblemAndUser(ctx context.Context, arg GetSolutionByProblemAndUserParams) (Solution, error)
 	GetUser(ctx context.Context, id int64) (User, error)

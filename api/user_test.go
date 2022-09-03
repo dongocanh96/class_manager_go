@@ -17,6 +17,7 @@ import (
 	"github.com/dongocanh96/class_manager_go/util"
 	"github.com/gin-gonic/gin"
 	"github.com/golang/mock/gomock"
+	"github.com/lib/pq"
 	"github.com/stretchr/testify/require"
 )
 
@@ -116,6 +117,64 @@ func TestCreateUserApi(t *testing.T) {
 				requireBodyMatchTeacher(t, recorder.Body, teacher)
 			},
 		},
+		{
+			name: "PasswordTooShort",
+			body: gin.H{
+				"username":     teacher.Username.String,
+				"password":     "dfgh",
+				"fullname":     teacher.Fullname.String,
+				"email":        teacher.Email.String,
+				"phone_number": teacher.PhoneNumber.String,
+				"teacher_key":  "5WC7CnJ99KBhyPF",
+			},
+			buildStubs: func(store *mockdb.MockStore) {
+				store.EXPECT().
+					CreateUser(gomock.Any(), gomock.Any()).
+					Times(0)
+			},
+			checkResponse: func(recorder *httptest.ResponseRecorder) {
+				require.Equal(t, http.StatusBadRequest, recorder.Code)
+			},
+		},
+		{
+			name: "DuplicateName",
+			body: gin.H{
+				"username":     teacher.Username.String,
+				"password":     teacherPassword,
+				"fullname":     teacher.Fullname.String,
+				"email":        teacher.Email.String,
+				"phone_number": teacher.PhoneNumber.String,
+				"teacher_key":  "5WC7CnJ99KBhyPF",
+			},
+			buildStubs: func(store *mockdb.MockStore) {
+				store.EXPECT().
+					CreateUser(gomock.Any(), gomock.Any()).
+					Times(1).
+					Return(db.User{}, &pq.Error{Code: "23505"})
+			},
+			checkResponse: func(recorder *httptest.ResponseRecorder) {
+				require.Equal(t, http.StatusForbidden, recorder.Code)
+			},
+		},
+		{
+			name: "InvalidName",
+			body: gin.H{
+				"username":     "hellop#1",
+				"password":     teacherPassword,
+				"fullname":     teacher.Fullname.String,
+				"email":        teacher.Email.String,
+				"phone_number": teacher.PhoneNumber.String,
+				"teacher_key":  "5WC7CnJ99KBhyPF",
+			},
+			buildStubs: func(store *mockdb.MockStore) {
+				store.EXPECT().
+					CreateUser(gomock.Any(), gomock.Any()).
+					Times(0)
+			},
+			checkResponse: func(recorder *httptest.ResponseRecorder) {
+				require.Equal(t, http.StatusBadRequest, recorder.Code)
+			},
+		},
 	}
 
 	for i := range testCases {
@@ -136,6 +195,128 @@ func TestCreateUserApi(t *testing.T) {
 			require.NoError(t, err)
 
 			url := "/users/create"
+			request, err := http.NewRequest(http.MethodPost, url, bytes.NewReader(data))
+			require.NoError(t, err)
+
+			server.router.ServeHTTP(recorder, request)
+			tc.checkResponse(recorder)
+		})
+	}
+}
+
+func TestLoginUserAPI(t *testing.T) {
+	user, password := randomStudentUser(t)
+
+	testCases := []struct {
+		name          string
+		body          gin.H
+		buildStubs    func(store *mockdb.MockStore)
+		checkResponse func(recoder *httptest.ResponseRecorder)
+	}{
+		{
+			name: "OK",
+			body: gin.H{
+				"username": user.Username.String,
+				"password": password,
+			},
+			buildStubs: func(store *mockdb.MockStore) {
+				store.EXPECT().
+					GetByUsername(gomock.Any(), gomock.Eq(user.Username)).
+					Times(1).
+					Return(user, nil)
+				store.EXPECT().
+					CreateSession(gomock.Any(), gomock.Any()).
+					Times(1)
+			},
+			checkResponse: func(recorder *httptest.ResponseRecorder) {
+				require.Equal(t, http.StatusOK, recorder.Code)
+			},
+		},
+		{
+			name: "UserNotFound",
+			body: gin.H{
+				"username": "NotFound",
+				"password": password,
+			},
+			buildStubs: func(store *mockdb.MockStore) {
+				store.EXPECT().
+					GetByUsername(gomock.Any(), gomock.Any()).
+					Times(1).
+					Return(db.User{}, sql.ErrNoRows)
+			},
+			checkResponse: func(recorder *httptest.ResponseRecorder) {
+				require.Equal(t, http.StatusNotFound, recorder.Code)
+			},
+		},
+		{
+			name: "IncorrectPassword",
+			body: gin.H{
+				"username": user.Username.String,
+				"password": "incorrect",
+			},
+			buildStubs: func(store *mockdb.MockStore) {
+				store.EXPECT().
+					GetByUsername(gomock.Any(), gomock.Eq(user.Username)).
+					Times(1).
+					Return(user, nil)
+			},
+			checkResponse: func(recorder *httptest.ResponseRecorder) {
+				require.Equal(t, http.StatusUnauthorized, recorder.Code)
+			},
+		},
+		{
+			name: "InternalError",
+			body: gin.H{
+				"username": user.Username.String,
+				"password": password,
+			},
+			buildStubs: func(store *mockdb.MockStore) {
+				store.EXPECT().
+					GetByUsername(gomock.Any(), gomock.Any()).
+					Times(1).
+					Return(db.User{}, sql.ErrConnDone)
+			},
+			checkResponse: func(recorder *httptest.ResponseRecorder) {
+				require.Equal(t, http.StatusInternalServerError, recorder.Code)
+			},
+		},
+		{
+			name: "InvalidUsername",
+			body: gin.H{
+				"username":  "invalid-user#1",
+				"password":  password,
+				"full_name": user.Fullname.String,
+				"email":     user.Email,
+			},
+			buildStubs: func(store *mockdb.MockStore) {
+				store.EXPECT().
+					GetByUsername(gomock.Any(), gomock.Any()).
+					Times(0)
+			},
+			checkResponse: func(recorder *httptest.ResponseRecorder) {
+				require.Equal(t, http.StatusBadRequest, recorder.Code)
+			},
+		},
+	}
+
+	for i := range testCases {
+		tc := testCases[i]
+
+		t.Run(tc.name, func(t *testing.T) {
+			ctrl := gomock.NewController(t)
+			defer ctrl.Finish()
+
+			store := mockdb.NewMockStore(ctrl)
+			tc.buildStubs(store)
+
+			server := newTestServer(t, store)
+			recorder := httptest.NewRecorder()
+
+			// Marshal body data to JSON
+			data, err := json.Marshal(tc.body)
+			require.NoError(t, err)
+
+			url := "/users/login"
 			request, err := http.NewRequest(http.MethodPost, url, bytes.NewReader(data))
 			require.NoError(t, err)
 
@@ -177,6 +358,7 @@ func requireBodyMatchStudent(t *testing.T, body *bytes.Buffer, student db.User) 
 		CreatedAt         time.Time `json:"created_at"`
 	}
 	err = json.Unmarshal(data, &gotUser)
+
 	require.NoError(t, err)
 	require.Equal(t, student.Username.String, gotUser.Username)
 	require.Equal(t, student.Fullname.String, gotUser.Fullname)
@@ -218,8 +400,6 @@ func requireBodyMatchTeacher(t *testing.T, body *bytes.Buffer, teacher db.User) 
 		CreatedAt         time.Time `json:"created_at"`
 	}
 	err = json.Unmarshal(data, &gotUser)
-
-	fmt.Println("sdsff")
 
 	require.NoError(t, err)
 	require.Equal(t, teacher.Username.String, gotUser.Username)

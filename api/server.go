@@ -79,7 +79,7 @@ func (server *Server) setupRouter() {
 
 	//user function
 	router.POST("/users/create", server.createUser)
-	router.POST("users/login", server.loginUser)
+	router.POST("/users/login", server.loginUser)
 	router.GET("/users/:id", server.getUser)
 	router.GET("/users", server.listUser)
 
