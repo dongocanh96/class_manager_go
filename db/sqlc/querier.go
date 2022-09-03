@@ -7,6 +7,8 @@ package db
 import (
 	"context"
 	"database/sql"
+
+	"github.com/google/uuid"
 )
 
 type Querier interface {
@@ -18,6 +20,7 @@ type Querier interface {
 	CreateUser(ctx context.Context, arg CreateUserParams) (User, error)
 	DeleteHomework(ctx context.Context, id int64) error
 	DeleteMessage(ctx context.Context, id int64) error
+	DeleteSession(ctx context.Context, id uuid.UUID) error
 	DeleteSolution(ctx context.Context, id int64) error
 	DeleteUser(ctx context.Context, id int64) error
 	GetByUsername(ctx context.Context, username sql.NullString) (User, error)
