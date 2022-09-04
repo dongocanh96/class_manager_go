@@ -278,14 +278,14 @@ func (server *Server) updateUserInfo(ctx *gin.Context) {
 		// student can not update another student's infos
 		if !authPayload.IsTeacher {
 			err := errors.New("permission denied!")
-			ctx.JSON(http.StatusForbidden, errorResponse(err))
+			ctx.JSON(http.StatusUnauthorized, errorResponse(err))
 			return
 		}
 
 		// teacher can not update another teacher's infos
 		if user.IsTeacher {
 			err := errors.New("permission denied!")
-			ctx.JSON(http.StatusForbidden, errorResponse(err))
+			ctx.JSON(http.StatusUnauthorized, errorResponse(err))
 			return
 		}
 	}
@@ -307,7 +307,7 @@ func (server *Server) updateUserInfo(ctx *gin.Context) {
 	// student can not change their username && fullname
 	if !authPayload.IsTeacher && (validFullname || validUsername) {
 		err := errors.New("permission denied!")
-		ctx.JSON(http.StatusForbidden, errorResponse(err))
+		ctx.JSON(http.StatusUnauthorized, errorResponse(err))
 		return
 	}
 
@@ -363,7 +363,7 @@ func (server *Server) updateUserPassword(ctx *gin.Context) {
 	authPayload := ctx.MustGet(authorizationPayloadKey).(*token.Payload)
 	if authPayload.Userid != reqURI.ID {
 		err := errors.New("permission denied!")
-		ctx.JSON(http.StatusForbidden, errorResponse(err))
+		ctx.JSON(http.StatusUnauthorized, errorResponse(err))
 		return
 	}
 
@@ -439,14 +439,14 @@ func (server *Server) deleteUser(ctx *gin.Context) {
 		// student can not delete another account
 		if !authPayload.IsTeacher {
 			err := errors.New("permission denied!")
-			ctx.JSON(http.StatusForbidden, errorResponse(err))
+			ctx.JSON(http.StatusUnauthorized, errorResponse(err))
 			return
 		}
 
 		// teacher can not delete another teacher's account
 		if user.IsTeacher {
 			err := errors.New("permission denied!")
-			ctx.JSON(http.StatusForbidden, errorResponse(err))
+			ctx.JSON(http.StatusUnauthorized, errorResponse(err))
 			return
 		}
 	}
@@ -482,11 +482,7 @@ func (server *Server) listHomeworkByTeacher(ctx *gin.Context) {
 		return
 	}
 
-	authPayload := ctx.MustGet(authorizationPayloadKey).(*token.Payload)
-	if _, err := server.store.GetUser(ctx, authPayload.Userid); err != nil {
-		ctx.JSON(http.StatusForbidden, errorResponse(err))
-		return
-	}
+	_ = ctx.MustGet(authorizationPayloadKey).(*token.Payload)
 
 	user, err := server.store.GetUser(ctx, reqURI.TeacherID)
 	if err != nil {
@@ -546,7 +542,7 @@ func (server *Server) listSolutionsByUser(ctx *gin.Context) {
 	authPayload := ctx.MustGet(authorizationPayloadKey).(*token.Payload)
 	if authPayload.Userid != reqURI.ID {
 		err := errors.New("permission denied!")
-		ctx.JSON(http.StatusForbidden, errorResponse(err))
+		ctx.JSON(http.StatusUnauthorized, errorResponse(err))
 		return
 	}
 
@@ -593,7 +589,7 @@ func (server *Server) listSendedMessage(ctx *gin.Context) {
 	authPayload := ctx.MustGet(authorizationPayloadKey).(*token.Payload)
 	if authPayload.Userid != reqURI.ID {
 		err := errors.New("permission denied!")
-		ctx.JSON(http.StatusForbidden, errorResponse(err))
+		ctx.JSON(http.StatusUnauthorized, errorResponse(err))
 		return
 	}
 
@@ -638,7 +634,7 @@ func (server *Server) listReceivedMessages(ctx *gin.Context) {
 	authPayload := ctx.MustGet(authorizationPayloadKey).(*token.Payload)
 	if authPayload.Userid != reqURI.ID {
 		err := errors.New("permission denied!")
-		ctx.JSON(http.StatusForbidden, errorResponse(err))
+		ctx.JSON(http.StatusUnauthorized, errorResponse(err))
 		return
 	}
 

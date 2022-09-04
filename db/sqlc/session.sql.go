@@ -72,11 +72,11 @@ func (q *Queries) DeleteSession(ctx context.Context, id uuid.UUID) error {
 
 const getSession = `-- name: GetSession :one
 SELECT id, username, refresh_token, user_agent, client_ip, is_blocked, expires_at, create_at FROM sessions
-WHERE username = $1 LIMIT 1
+WHERE id = $1 LIMIT 1
 `
 
-func (q *Queries) GetSession(ctx context.Context, username string) (Session, error) {
-	row := q.db.QueryRowContext(ctx, getSession, username)
+func (q *Queries) GetSession(ctx context.Context, id uuid.UUID) (Session, error) {
+	row := q.db.QueryRowContext(ctx, getSession, id)
 	var i Session
 	err := row.Scan(
 		&i.ID,

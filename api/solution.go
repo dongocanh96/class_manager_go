@@ -40,7 +40,7 @@ func (server *Server) getSolutionByID(ctx *gin.Context) {
 
 	if !authPayload.IsTeacher && authPayload.Userid != solution.UserID {
 		err := errors.New("permission denied!")
-		ctx.JSON(http.StatusForbidden, errorResponse(err))
+		ctx.JSON(http.StatusUnauthorized, errorResponse(err))
 		return
 	}
 
