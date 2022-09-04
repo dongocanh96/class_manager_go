@@ -45,7 +45,7 @@ func TestGetSession(t *testing.T) {
 	user := createRandomUser(t)
 	session1 := createRandomSession(t, user.Username)
 
-	session2, err := testQueries.GetSession(context.Background(), session1.Username)
+	session2, err := testQueries.GetSession(context.Background(), session1.ID)
 	require.NoError(t, err)
 	require.Equal(t, session1.ID, session2.ID)
 	require.Equal(t, session1.Username, session2.Username)
@@ -67,7 +67,7 @@ func TestDeleteSession(t *testing.T) {
 	err := testQueries.DeleteSession(context.Background(), session.ID)
 	require.NoError(t, err)
 
-	_, err = testQueries.GetSession(context.Background(), session.Username)
+	_, err = testQueries.GetSession(context.Background(), session.ID)
 	require.Error(t, err)
 	testQueries.DeleteUser(context.Background(), user.ID)
 }

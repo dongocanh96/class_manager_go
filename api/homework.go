@@ -33,7 +33,7 @@ func (server *Server) createHomework(ctx *gin.Context) {
 
 	if !authPayload.IsTeacher {
 		err := errors.New("user is not teacher!")
-		ctx.JSON(http.StatusForbidden, errorResponse(err))
+		ctx.JSON(http.StatusUnauthorized, errorResponse(err))
 		return
 	}
 
@@ -263,7 +263,7 @@ func (server *Server) closeHomework(ctx *gin.Context) {
 
 	if authPayload.Userid != homework.TeacherID {
 		err := errors.New("permission denied!")
-		ctx.JSON(http.StatusForbidden, errorResponse(err))
+		ctx.JSON(http.StatusUnauthorized, errorResponse(err))
 		return
 	}
 

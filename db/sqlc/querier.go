@@ -26,7 +26,7 @@ type Querier interface {
 	GetByUsername(ctx context.Context, username sql.NullString) (User, error)
 	GetHomework(ctx context.Context, id int64) (Homework, error)
 	GetMessage(ctx context.Context, id int64) (Message, error)
-	GetSession(ctx context.Context, username string) (Session, error)
+	GetSession(ctx context.Context, id uuid.UUID) (Session, error)
 	GetSolutionByID(ctx context.Context, id int64) (Solution, error)
 	GetSolutionByProblemAndUser(ctx context.Context, arg GetSolutionByProblemAndUserParams) (Solution, error)
 	GetUser(ctx context.Context, id int64) (User, error)
