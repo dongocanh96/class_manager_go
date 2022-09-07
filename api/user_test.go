@@ -14,6 +14,7 @@ import (
 
 	mockdb "github.com/dongocanh96/class_manager_go/db/mock"
 	db "github.com/dongocanh96/class_manager_go/db/sqlc"
+	"github.com/dongocanh96/class_manager_go/token"
 	"github.com/dongocanh96/class_manager_go/util"
 	"github.com/gin-gonic/gin"
 	"github.com/golang/mock/gomock"
@@ -326,6 +327,101 @@ func TestLoginUserAPI(t *testing.T) {
 	}
 }
 
+func TestUpdateUserInfo(t *testing.T) {
+	// student, password := randomStudentUser(t)
+	teacher, _ := randomTeacherUser(t)
+
+	updateUsername := util.RandomString(6)
+	updateFullname := util.RandomString(6)
+	updateEmail := util.RandomEmail()
+	updatePhone := util.RandomPhoneNumber()
+
+	testCases := []struct {
+		name          string
+		userId        int64
+		body          gin.H
+		setupAuth     func(t *testing.T, request *http.Request, tokenMaker token.JWTMaker)
+		buildStubs    func(store *mockdb.MockStore)
+		checkResponse func(t *testing.T, recorder *httptest.ResponseRecorder)
+	}{
+		{
+			name:   "OK",
+			userId: teacher.ID,
+			body: gin.H{
+				"username":     updateUsername,
+				"fullname":     updateFullname,
+				"email":        updateEmail,
+				"phone_number": updatePhone,
+			},
+			setupAuth: func(t *testing.T, request *http.Request, tokenMaker token.JWTMaker) {
+				addAuthorization(t, request, tokenMaker,
+					authorizationTypeBearer, teacher.ID, teacher.Username.String, teacher.IsTeacher,
+					time.Minute*15)
+			},
+			buildStubs: func(store *mockdb.MockStore) {
+				store.EXPECT().GetUser(gomock.Any(), gomock.Eq(teacher.ID)).
+					Times(1).
+					Return(teacher, nil)
+
+				arg := db.UpdateUserInfoTxParams{
+					ID:          teacher.ID,
+					Username:    sql.NullString{String: updateUsername, Valid: true},
+					Fullname:    sql.NullString{String: updateFullname, Valid: true},
+					Email:       sql.NullString{String: updateEmail, Valid: true},
+					PhoneNumber: sql.NullString{String: updatePhone, Valid: true},
+				}
+
+				updateUser := db.UpdateUserInfoTxResult{
+					User: db.User{
+						ID:                teacher.ID,
+						Username:          sql.NullString{String: updateUsername, Valid: true},
+						HashedPassword:    teacher.HashedPassword,
+						Fullname:          sql.NullString{String: updateFullname, Valid: true},
+						Email:             sql.NullString{String: updateEmail, Valid: true},
+						PhoneNumber:       sql.NullString{String: updatePhone, Valid: true},
+						PasswordChangedAt: teacher.PasswordChangedAt,
+						CreatedAt:         teacher.CreatedAt,
+					},
+				}
+
+				store.EXPECT().UpdateUserInfoTx(gomock.Any(), gomock.Eq(arg)).
+					Times(1).
+					Return(updateUser, nil)
+			},
+			checkResponse: func(t *testing.T, recorder *httptest.ResponseRecorder) {
+				require.Equal(t, http.StatusOK, recorder.Code)
+			},
+		},
+	}
+
+	for i := range testCases {
+		tc := testCases[i]
+
+		t.Run(tc.name, func(t *testing.T) {
+			ctrl := gomock.NewController(t)
+			defer ctrl.Finish()
+
+			store := mockdb.NewMockStore(ctrl)
+			tc.buildStubs(store)
+
+			server := newTestServer(t, store)
+			recorder := httptest.NewRecorder()
+
+			data, err := json.Marshal(tc.body)
+			require.NoError(t, err)
+
+			url := fmt.Sprintf("/users/%d/update_info", tc.userId)
+			request, err := http.NewRequest(http.MethodPut, url, bytes.NewReader(data))
+			require.NoError(t, err)
+
+			tc.setupAuth(t, request, server.tokenMaker)
+			server.router.ServeHTTP(recorder, request)
+			tc.checkResponse(t, recorder)
+		})
+	}
+
+}
+
 func randomStudentUser(t *testing.T) (user db.User, password string) {
 	password = util.RandomString(6)
 	hashedPassword, err := util.HashPassword(password)
@@ -374,6 +470,7 @@ func randomTeacherUser(t *testing.T) (user db.User, password string) {
 	require.NoError(t, err)
 
 	user = db.User{
+		ID:             util.RandomInt(1, 100),
 		Username:       sql.NullString{String: util.RandomString(6), Valid: true},
 		HashedPassword: hashedPassword,
 		Fullname:       sql.NullString{String: util.RandomString(6), Valid: true},
