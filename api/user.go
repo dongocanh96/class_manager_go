@@ -261,6 +261,8 @@ func (server *Server) updateUserInfo(ctx *gin.Context) {
 		return
 	}
 
+	authPayload := ctx.MustGet(authorizationPayloadKey).(*token.Payload)
+
 	user, err := server.store.GetUser(ctx, reqURI.ID)
 	if err != nil {
 		if err == sql.ErrNoRows {
@@ -271,8 +273,6 @@ func (server *Server) updateUserInfo(ctx *gin.Context) {
 		ctx.JSON(http.StatusInternalServerError, errorResponse(err))
 		return
 	}
-
-	authPayload := ctx.MustGet(authorizationPayloadKey).(*token.Payload)
 
 	if authPayload.Userid != user.ID {
 		// student can not update another student's infos
